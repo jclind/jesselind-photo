@@ -30,6 +30,16 @@ export const projects: ProjectType[] = [
     thumbnailUrl: '/images/projects/japan-2023-thumbnail.webp',
     mobilePosterUrl: '/images/projects/japan-2023-poster-mobile.webp',
   },
+  {
+    id: 'japan-2025',
+    name: 'Japan 2025',
+    date: '04-28-2025',
+    description:
+      'Two month trip to Japan exploring Sapporo, Fukuoka, Nagasaki, Osaka, Kyoto, Tokyo and more.',
+    posterUrl: '/images/projects/japan-2025-poster.webp',
+    thumbnailUrl: '/images/projects/japan-2025-thumbnail.webp',
+    mobilePosterUrl: '/images/projects/japan-2025-poster-mobile.webp',
+  },
 ].sort((a, b) => {
   const dateA = new Date(a.date)
   const dateB = new Date(b.date)
