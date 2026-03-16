@@ -37,15 +37,15 @@ const ProjectGallery = ({ currProject }: ProjectGalleryProps) => {
       ? query(
           photosRef,
           where('projectID', '==', projectID),
-          orderBy('sequenceNumber', 'desc'),
+          orderBy('sequenceNumber', 'asc'),
           startAfter(lastDoc),
-          limit(PAGE_SIZE)
+          limit(PAGE_SIZE),
         )
       : query(
           photosRef,
           where('projectID', '==', projectID),
-          orderBy('sequenceNumber', 'desc'),
-          limit(PAGE_SIZE)
+          orderBy('sequenceNumber', 'asc'),
+          limit(PAGE_SIZE),
         )
 
     const snapshot = await getDocs(q)
