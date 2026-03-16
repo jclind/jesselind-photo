@@ -19,7 +19,7 @@ const InfoDisplay = ({ photoInfo }: InfoDisplayProps) => {
         aria-label='Toggle photo information'
       >
         {isOpen ? (
-          <X size={20} strokeWidth={1.2} />
+          <X size={20} strokeWidth={1.2} color='white' />
         ) : (
           <Info size={20} strokeWidth={1.2} />
         )}
