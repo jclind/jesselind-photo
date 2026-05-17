@@ -118,6 +118,7 @@
       right: calc(var(--width-4th) / 2);
       transform: translate(50%, -50%);
       width: 100px;
+      height: auto;
     }
 
     .img1 {
@@ -185,6 +186,7 @@
         top: 24px;
         left: 24px;
         width: 60px;
+        height: auto;
         transform: translate(0, 0);
         z-index: 12;
       }

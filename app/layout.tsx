@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Script from 'next/script'
 import './globals.scss'
 import Navbar from '@/components/Common/Navbar'
 import { PHOTO_WEBSITE_URL } from '@/data/contact'
@@ -82,22 +83,6 @@ export default function RootLayout({
   return (
     <html lang='en'>
       <head>
-        <script
-          async
-          src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', '${GA_ID}', {
-                page_path: window.location.pathname,
-              });
-            `,
-          }}
-        />
         <link
           rel='preconnect'
           href='https://firebasestorage.googleapis.com'
@@ -110,6 +95,20 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+          strategy='afterInteractive'
+        />
+        <Script id='ga-init' strategy='afterInteractive'>
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_ID}', {
+              page_path: window.location.pathname,
+            });
+          `}
+        </Script>
         <LogoButton />
         <Navbar />
         {children}

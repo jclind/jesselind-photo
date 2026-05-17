@@ -1,7 +1,12 @@
 import { projects } from '@/data/projects'
 import React from 'react'
+import Image from 'next/image'
 import styles from './page.module.scss'
 import ProjectGallery from './ProjectGallery'
+
+export const generateStaticParams = async () => {
+  return projects.map(p => ({ projectID: p.id }))
+}
 
 export const generateMetadata = async ({
   params,
@@ -32,7 +37,17 @@ const ProjectPage = async ({ params }: PageProps) => {
     <div className={styles.projectPage}>
       <div className={styles.header}>
         <div className={styles.imageContainer}>
-          <img src={currProject.posterUrl} alt='' />
+          <Image
+            src={currProject.posterUrl}
+            alt=''
+            width={2000}
+            height={2000}
+            priority
+            fetchPriority='high'
+            sizes='(max-width: 768px) 92vw, 500px'
+            placeholder='blur'
+            blurDataURL={currProject.thumbnailUrl}
+          />
         </div>
         <div className={styles.text}>
           <h1>{currProject.name}</h1>

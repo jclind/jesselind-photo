@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import styles from './GalleryTemplate.module.scss'
 import { LayoutGrid, PanelsTopLeft } from 'lucide-react'
 import type { QueryDocumentSnapshot } from 'firebase/firestore'
@@ -28,6 +28,7 @@ const GalleryTemplate = ({
   const [hasMore, setHasMore] = useState(true)
   const [loading, setLoading] = useState(false)
   const [isThumbnailMode, setIsThumbnailMode] = useState(true)
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return
@@ -48,20 +49,22 @@ const GalleryTemplate = ({
     loadMore()
   }, [])
 
-  // infinite scroll
+  // infinite scroll via IntersectionObserver on a sentinel below the grid
   useEffect(() => {
-    const onScroll = () => {
-      if (
-        window.innerHeight + window.scrollY >=
-          document.documentElement.scrollHeight - 1000 &&
-        !loading &&
-        hasMore
-      ) {
-        loadMore()
-      }
-    }
-    window.addEventListener('scroll', onScroll)
-    return () => window.removeEventListener('scroll', onScroll)
+    if (!hasMore) return
+    const node = sentinelRef.current
+    if (!node) return
+
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0]?.isIntersecting && !loading && hasMore) {
+          loadMore()
+        }
+      },
+      { rootMargin: '1000px 0px' }
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
   }, [loadMore, loading, hasMore])
 
   const handleModeToggle = () => {
@@ -106,6 +109,7 @@ const GalleryTemplate = ({
             />
           )}
         </div>
+        {hasMore && <div ref={sentinelRef} aria-hidden />}
       </div>
     </div>
   )

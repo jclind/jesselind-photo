@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import styles from './page.module.scss'
 import { categories } from '@/data/categories'
 import HoverInteractivity from './HoverInteractivity'
@@ -29,7 +30,13 @@ const Collections = () => {
               }`}</span>
               <span className={styles.name}>{category.name}</span>
               <div className={styles.imageContainer}>
-                <img src={category.imgSrc} alt={category.name} />
+                <Image
+                  src={category.imgSrc}
+                  alt={category.name}
+                  width={3120}
+                  height={2080}
+                  sizes='(max-width: 992px) 60vw, 40vw'
+                />
               </div>
               <div className={styles.line}></div>
             </Link>

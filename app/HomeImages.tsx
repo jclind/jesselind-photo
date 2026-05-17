@@ -10,7 +10,6 @@ const HomeImages = () => {
 
   const [loadedImages, setLoadedImages] = useState(0)
   const [allLoaded, setAllLoaded] = useState(false)
-  const [isDelayComplete, setIsDelayComplete] = useState(true)
 
   const handleImageLoad = () => {
     setLoadedImages(prev => prev + 1)
@@ -26,24 +25,15 @@ const HomeImages = () => {
       })
     }
   }, [loadedImages, totalImages])
-  useEffect(() => {
-    setTimeout(() => {
-      setIsDelayComplete(true)
-    }, 500)
-  }, [])
 
   return (
     <>
       <div
         className={`${styles.loadingPage} ${allLoaded ? styles.loaded : ''}`}
       >
-        {isDelayComplete && (
-          <>
-            <span>{loadedImages}</span>
-            <span>/</span>
-            <span>{totalImages}</span>
-          </>
-        )}
+        <span>{loadedImages}</span>
+        <span>/</span>
+        <span>{totalImages}</span>
       </div>
       <div
         className={`${styles.imagesContainer} ${
@@ -56,12 +46,14 @@ const HomeImages = () => {
           aria-label='Link to photo 00176'
         >
           <Image
-            loading='eager'
+            priority
+            fetchPriority='high'
             src='/images/home/1.webp'
             alt='Rainbow falling on dark mountain'
             onLoad={handleImageLoad}
             width={3120}
             height={2080}
+            sizes='(max-width: 576px) 92vw, 58vw'
           />
         </Link>
         <Link
@@ -76,6 +68,7 @@ const HomeImages = () => {
             onLoad={handleImageLoad}
             width={2080}
             height={3120}
+            sizes='33vw'
           />
         </Link>
         <Link
@@ -90,6 +83,7 @@ const HomeImages = () => {
             onLoad={handleImageLoad}
             width={3120}
             height={2080}
+            sizes='(max-width: 576px) 50vw, 42vw'
           />
         </Link>
         <Link
@@ -104,6 +98,7 @@ const HomeImages = () => {
             onLoad={handleImageLoad}
             width={3120}
             height={2080}
+            sizes='(max-width: 576px) 83vw, 58vw'
           />
         </Link>
         <Link
@@ -118,6 +113,7 @@ const HomeImages = () => {
             onLoad={handleImageLoad}
             width={2080}
             height={3120}
+            sizes='33vw'
           />
         </Link>
         <Link
@@ -132,6 +128,7 @@ const HomeImages = () => {
             onLoad={handleImageLoad}
             width={3120}
             height={2080}
+            sizes='58vw'
           />
         </Link>
         <Link
@@ -146,6 +143,7 @@ const HomeImages = () => {
             onLoad={handleImageLoad}
             width={3120}
             height={2080}
+            sizes='42vw'
           />
         </Link>
         <Link
@@ -160,6 +158,7 @@ const HomeImages = () => {
             onLoad={handleImageLoad}
             width={3120}
             height={2080}
+            sizes='42vw'
           />
         </Link>
         <Link
@@ -174,6 +173,7 @@ const HomeImages = () => {
             onLoad={handleImageLoad}
             width={3120}
             height={2080}
+            sizes='58vw'
           />
         </Link>
       </div>

@@ -1,8 +1,12 @@
 'use client'
 
-import PhotoViewer from '@/components/PhotoViewer'
+import dynamic from 'next/dynamic'
 import { PhotoViewerFilterType } from '@/types/Photo'
 import { useParams } from 'next/navigation'
+
+const PhotoViewer = dynamic(() => import('@/components/PhotoViewer'), {
+  ssr: false,
+})
 
 const ProjectPhoto = () => {
   const { projectID, photoID } = useParams<{

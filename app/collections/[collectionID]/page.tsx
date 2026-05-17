@@ -1,5 +1,12 @@
 import React from 'react'
 import CollectionGallery from './CollectionGallery'
+import { categories } from '@/data/categories'
+
+export const generateStaticParams = async () => {
+  return categories.map(c => ({
+    collectionID: c.path.replace(/^\/collections\//, ''),
+  }))
+}
 
 export const generateMetadata = async ({
   params,
