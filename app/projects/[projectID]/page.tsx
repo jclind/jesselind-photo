@@ -1,7 +1,6 @@
 import { projects } from '@/data/projects'
 import React from 'react'
 import styles from './page.module.scss'
-import Gallery from '@/app/all-photos/Gallery'
 import ProjectGallery from './ProjectGallery'
 
 export const generateMetadata = async ({

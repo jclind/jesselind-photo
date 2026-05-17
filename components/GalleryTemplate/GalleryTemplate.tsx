@@ -1,23 +1,20 @@
 'use client'
 
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import styles from './GalleryTemplate.module.scss'
 import { LayoutGrid, PanelsTopLeft } from 'lucide-react'
+import type { QueryDocumentSnapshot } from 'firebase/firestore'
 import PhotoThumbnail from './PhotoThumbnail'
 import PhotoRows from './PhotoRows'
 import { Photo } from '@/types/Photo'
 
 type GalleryProps = {
   fetchPhotos: (
-    lastDoc?: any
-  ) => Promise<{ photos: Photo[]; lastDoc: any | null }>
+    lastDoc?: QueryDocumentSnapshot
+  ) => Promise<{ photos: Photo[]; lastDoc: QueryDocumentSnapshot | null }>
   pageSize?: number
   imagePath: string
   topGapSmall?: boolean
-}
-
-export const storeImageInSession = (photo: Photo) => {
-  sessionStorage.setItem('selectedPhoto', JSON.stringify(photo))
 }
 
 const GalleryTemplate = ({
@@ -27,7 +24,7 @@ const GalleryTemplate = ({
   topGapSmall,
 }: GalleryProps) => {
   const [photos, setPhotos] = useState<Photo[]>([])
-  const [lastDoc, setLastDoc] = useState<any | null>(null)
+  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const [loading, setLoading] = useState(false)
   const [isThumbnailMode, setIsThumbnailMode] = useState(true)
@@ -37,7 +34,7 @@ const GalleryTemplate = ({
     setLoading(true)
     try {
       const { photos: newPhotos, lastDoc: newLastDoc } = await fetchPhotos(
-        lastDoc
+        lastDoc ?? undefined
       )
       setPhotos(prev => [...prev, ...newPhotos])
       setLastDoc(newLastDoc)

@@ -13,12 +13,7 @@ export const generateMetadata = async ({
   }
 }
 
-interface PageProps {
-  params: Promise<{ projectID: string; photoID: string }>
-}
-
-const CollectionsPhotoPage = async ({ params }: PageProps) => {
-  await params
+const CollectionsPhotoPage = () => {
   return <ProjectPhoto />
 }
 

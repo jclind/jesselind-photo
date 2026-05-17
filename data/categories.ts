@@ -56,25 +56,4 @@ export const categories: CollectionType[] = [
     imgSrc: '/images/collections/studio.webp',
     path: '/collections/studio',
   },
-  // {
-  //   name: 'street',
-  //   imgSrc: '/images/home/9.webp',
-  //   path: '/collections/street',
-  // },
-  // {
-  //   name: 'minimal',
-  //   imgSrc: '/images/home/6.webp',
-  //   path: '/collections/minimal',
-  // },
-  // {
-  //   name: 'abstract',
-  //   imgSrc: '/images/home/7.webp',
-  //   path: '/collections/abstract',
-  // },
-
-  // {
-  //   name: 'seasons',
-  //   imgSrc: '/images/home/9.webp',
-  //   path: '/collections/seasons',
-  // },
 ]

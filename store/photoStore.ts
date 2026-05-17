@@ -5,8 +5,6 @@ import { Photo } from '@/types/Photo'
 export interface CachedPhoto {
   photo: Photo
   preloadedUrl?: string
-  width?: number
-  height?: number
 }
 
 interface PhotoStore {

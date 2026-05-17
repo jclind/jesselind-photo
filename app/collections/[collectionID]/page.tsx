@@ -15,12 +15,7 @@ export const generateMetadata = async ({
   }
 }
 
-interface PageProps {
-  params: Promise<{ collectionID: string }>
-}
-
-const CollectionPage = async ({ params }: PageProps) => {
-  await params
+const CollectionPage = () => {
   return <CollectionGallery />
 }
 

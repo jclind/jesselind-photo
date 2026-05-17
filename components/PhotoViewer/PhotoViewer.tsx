@@ -9,11 +9,6 @@ import PhotoControls from './PhotoControls'
 import { usePhotoCollection } from '@/hooks/usePhotoCollection'
 import InfoDisplay from './InfoDisplay'
 import { PhotoViewerFilterType, Photo } from '@/types/Photo'
-import Link from 'next/link'
-import {
-  getAspectRatioFromPhoto,
-  getPhotoWidthFromHeight,
-} from '@/util/photoDimentionFns'
 import { usePhotoStore } from '@/store/photoStore'
 
 interface PageProps {
@@ -49,18 +44,6 @@ const PhotoViewerPage = ({ params, filter, path }: PageProps) => {
     return () => clearTimeout(timer) // cleanup if loading finishes early
   }, [isLoading, collectionLoading])
 
-  const getPhotoDimensionsOnPage = (
-    photo: Photo
-  ): { height: number; width: number } => {
-    if (!photo) return { height: 0, width: 0 }
-    const containerHeight =
-      document.getElementById('photoContainer')?.clientHeight || 0
-    return {
-      width: Number(getPhotoWidthFromHeight(photo, containerHeight).toFixed(2)),
-      height: Number(containerHeight.toFixed(2)),
-    }
-  }
-
   // Displayed photo updated after image fully loads
   useEffect(() => {
     if (!photo || !photo.fullUrl) return
@@ -85,14 +68,11 @@ const PhotoViewerPage = ({ params, filter, path }: PageProps) => {
   useEffect(() => {
     const preloadPhoto = (currPhoto: Photo | null) => {
       if (!currPhoto || !currPhoto.fullUrl) return
-      const { width, height } = getPhotoDimensionsOnPage(currPhoto)
       const img = new Image()
       img.src = currPhoto.fullUrl
       store.addPhoto(currPhoto.id, {
         photo: currPhoto,
         preloadedUrl: img.src,
-        width,
-        height,
       })
     }
 

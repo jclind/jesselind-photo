@@ -50,7 +50,6 @@ const CollectionGallery = () => {
     const snapshot = await getDocs(q)
 
     if (snapshot.empty) {
-      console.log('FetchPhotos 3: its empty?')
       return { photos: [], lastDoc: null }
     }
 

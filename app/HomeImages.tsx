@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import React, { ReactEventHandler, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import styles from './page.module.scss'
 import Image from 'next/image'
 

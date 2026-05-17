@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.scss'
 import Navbar from '@/components/Common/Navbar'
 import { PHOTO_WEBSITE_URL } from '@/data/contact'

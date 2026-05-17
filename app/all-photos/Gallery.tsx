@@ -9,12 +9,10 @@ import {
   limit,
   getDocs,
   type QueryDocumentSnapshot,
-  type DocumentData,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { Photo } from '@/types/Photo'
 import GalleryTemplate from '@/components/GalleryTemplate'
-import Head from 'next/head'
 
 const PAGE_SIZE = 20
 

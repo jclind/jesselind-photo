@@ -4,6 +4,7 @@ export interface Photo {
   id: string
   title: string
   category?: string
+  projectID?: string
   description?: string
   thumbnailUrl?: string
   thumbnailPath?: string
@@ -23,5 +24,5 @@ export type PhotoRowsType = {
 
 export type PhotoViewerFilterType = {
   field: 'category' | 'projectID'
-  value: any
+  value: string
 }

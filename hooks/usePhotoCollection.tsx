@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { db } from '@/lib/firebase'
 import { collection, getDocs, query, orderBy, where } from 'firebase/firestore'
-import { Photo } from '@/types/Photo'
+import { Photo, PhotoViewerFilterType } from '@/types/Photo'
 
 interface UsePhotoCollectionProps {
   initialPhotoID: string
-  filter?: { field: string; value: any } // optional for collection/project
+  filter?: PhotoViewerFilterType
 }
 
 export function usePhotoCollection({

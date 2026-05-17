@@ -1,8 +1,6 @@
 'use client'
 
 import PhotoViewer from '@/components/PhotoViewer'
-import Head from 'next/head'
-import { useState, useEffect } from 'react'
 
 import { useParams } from 'next/navigation'
 
