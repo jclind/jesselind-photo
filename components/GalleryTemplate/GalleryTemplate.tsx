@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import styles from './GalleryTemplate.module.scss'
 import { LayoutGrid, PanelsTopLeft } from 'lucide-react'
-import type { QueryDocumentSnapshot } from 'firebase/firestore'
+import type { QueryDocumentSnapshot } from 'firebase/firestore/lite'
 import PhotoThumbnail from './PhotoThumbnail'
 import PhotoRows from './PhotoRows'
 import { Photo } from '@/types/Photo'

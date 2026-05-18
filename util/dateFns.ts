@@ -1,4 +1,4 @@
-import { Timestamp } from 'firebase/firestore'
+import { Timestamp } from 'firebase/firestore/lite'
 
 export const timestampToMMDDYYYY = (timestamp: Timestamp): string => {
   if (!timestamp) return ''

@@ -1,36 +1,43 @@
 import React, { useEffect, useState } from 'react'
+import Image from 'next/image'
 import styles from './PhotoViewer.module.scss'
 import { Photo } from '@/types/Photo'
-import { usePhotoStore } from '@/store/photoStore'
 
 interface PhotoImageProps {
   photo: Photo
-  isLoading: boolean
 }
 
-const PhotoImage = ({ photo, isLoading }: PhotoImageProps) => {
-  const cached = usePhotoStore(state => state.cache[photo.id])
-  const [loaded, setLoaded] = useState(Boolean(cached?.preloadedUrl))
+const PhotoImage = ({ photo }: PhotoImageProps) => {
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
-    if (cached?.preloadedUrl) {
-      setLoaded(true)
-      return
-    }
     setLoaded(false)
-    if (!photo.fullUrl) return
-    const img: HTMLImageElement = new Image()
-    img.src = photo.fullUrl
-    img.onload = () => setLoaded(true)
-  }, [photo, cached])
+  }, [photo.id])
+
+  if (!photo.fullUrl) return null
 
   return (
-    <img
-      src={photo.fullUrl}
-      alt={photo.title || 'Photo'}
-      draggable={false}
-      className={`${styles.photo} ${loaded ? styles.loaded : ''}`}
-    />
+    <div
+      className={styles.photoFrame}
+      style={{
+        aspectRatio: `${photo.width} / ${photo.height}`,
+        ...(photo.blurDataURL && {
+          backgroundImage: `url("${photo.blurDataURL}")`,
+        }),
+      }}
+    >
+      <Image
+        src={photo.fullUrl}
+        alt={photo.title || 'Photo'}
+        width={photo.width}
+        height={photo.height}
+        draggable={false}
+        priority
+        sizes='100vw'
+        onLoad={() => setLoaded(true)}
+        className={`${styles.photo} ${loaded ? styles.loaded : ''}`}
+      />
+    </div>
   )
 }
 

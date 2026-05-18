@@ -15,7 +15,7 @@ import {
   startAfter,
   limit,
   getDocs,
-} from 'firebase/firestore'
+} from 'firebase/firestore/lite'
 
 type ProjectGalleryProps = {
   currProject: ProjectType

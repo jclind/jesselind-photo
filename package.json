@@ -7,7 +7,8 @@
     "build": "next build",
     "postbuild": "next-sitemap",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "analyze": "ANALYZE=true next build --webpack"
   },
   "engines": {
     "node": ">=24"
@@ -24,6 +25,7 @@
     "zustand": "^5.0.13"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.2.6",
     "@types/node": "^24.12.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

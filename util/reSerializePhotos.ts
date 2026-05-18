@@ -6,7 +6,7 @@ import {
   DocumentReference,
   getDocs,
   writeBatch,
-} from 'firebase/firestore'
+} from 'firebase/firestore/lite'
 
 export const getPhotoID = (sequenceNumber: number) => {
   return String(sequenceNumber).padStart(5, '0')

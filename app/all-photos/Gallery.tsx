@@ -9,7 +9,7 @@ import {
   limit,
   getDocs,
   type QueryDocumentSnapshot,
-} from 'firebase/firestore'
+} from 'firebase/firestore/lite'
 import { db } from '@/lib/firebase'
 import { Photo } from '@/types/Photo'
 import GalleryTemplate from '@/components/GalleryTemplate'

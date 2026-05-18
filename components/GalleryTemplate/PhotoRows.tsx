@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react'
 import styles from './GalleryTemplate.module.scss'
 import { Photo, PhotoRowsType } from '@/types/Photo'
 import Link from 'next/link'
+import Image from 'next/image'
 import { getAspectRatioFromPhoto } from '@/util/photoDimentionFns'
 
 const PhotoRows = ({
@@ -84,12 +85,20 @@ const PhotoRows = ({
                   key={photo.id}
                   onMouseEnter={() => {
                     if (photo.fullUrl) {
-                      const img = new Image()
+                      const img = new window.Image()
                       img.src = photo.fullUrl
                     }
                   }}
                 >
-                  <img src={photo.fullUrl} height={h} width={w} />
+                  {photo.fullUrl && (
+                    <Image
+                      src={photo.fullUrl}
+                      alt={photo.title || ''}
+                      width={Math.round(w)}
+                      height={Math.round(h)}
+                      sizes='(max-width: 768px) 100vw, 60vw'
+                    />
+                  )}
                 </Link>
               )
             })}

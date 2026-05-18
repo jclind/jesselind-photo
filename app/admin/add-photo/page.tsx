@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import imageCompression from 'browser-image-compression'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import {
   collection,
@@ -10,7 +9,7 @@ import {
   Timestamp,
   runTransaction,
   doc,
-} from 'firebase/firestore'
+} from 'firebase/firestore/lite'
 import styles from './page.module.scss'
 import { db, storage } from '@/lib/firebase'
 import { categories, CollectionType } from '@/data/categories'
@@ -18,6 +17,7 @@ import { projects, ProjectType } from '@/data/projects'
 import AdminNav from '../AdminNav'
 import AdminGate from '@/components/AdminGate'
 import { getPhotoID } from '@/util/reSerializePhotos'
+import { generateBlurPlaceholder } from '@/util/generateBlurPlaceholder'
 
 export default function AddPhoto() {
   // Metadata inputs that apply to all files
@@ -77,6 +77,11 @@ export default function AddPhoto() {
 
     setLoading(true)
 
+    // Lazy-load the compression lib so its ~50 KB doesn't ship on page mount
+    const { default: imageCompression } = await import(
+      'browser-image-compression'
+    )
+
     try {
       const counterRef = doc(db, 'counters', 'photos')
 
@@ -110,6 +115,9 @@ export default function AddPhoto() {
           await uploadBytes(thumbRef, thumbBlob)
           const thumbUrl = await getDownloadURL(thumbRef)
 
+          // Tiny base64 placeholder for <Image placeholder='blur'>
+          const blurDataURL = await generateBlurPlaceholder(thumbBlob)
+
           // Increment sequence number
           lastSequenceNumber++
 
@@ -128,6 +136,7 @@ export default function AddPhoto() {
             projectID: projectID || null,
             fullUrl,
             thumbnailUrl: thumbUrl,
+            blurDataURL,
             width,
             height,
             createdAt: serverTimestamp(),

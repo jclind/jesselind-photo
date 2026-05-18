@@ -1,4 +1,4 @@
-import { Timestamp } from 'firebase/firestore'
+import { Timestamp } from 'firebase/firestore/lite'
 
 export interface Photo {
   id: string
@@ -15,6 +15,7 @@ export interface Photo {
   height: number
   width: number
   sequenceNumber: number
+  blurDataURL?: string
 }
 
 export type PhotoRowsType = {
@@ -26,3 +27,5 @@ export type PhotoViewerFilterType = {
   field: 'category' | 'projectID'
   value: string
 }
+
+export type PhotoLoadError = 'not-found' | 'fetch-failed'
