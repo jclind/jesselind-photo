@@ -25,10 +25,6 @@ const nextConfig: NextConfig = {
         source: '/images/:path*',
         headers: [{ key: 'Cache-Control', value: IMMUTABLE }],
       },
-      {
-        source: '/fonts/:path*',
-        headers: [{ key: 'Cache-Control', value: IMMUTABLE }],
-      },
     ]
   },
 }

@@ -1,9 +1,25 @@
 import type { Metadata } from 'next'
 import Script from 'next/script'
+import localFont from 'next/font/local'
 import './globals.scss'
 import Navbar from '@/components/Common/Navbar'
 import { PHOTO_WEBSITE_URL } from '@/data/contact'
 import LogoButton from '@/components/Common/LogoButton'
+
+const nohemi = localFont({
+  src: [
+    { path: './fonts/Nohemi/ExtraLight.woff', weight: '200', style: 'normal' },
+    { path: './fonts/Nohemi/Light.woff', weight: '300', style: 'normal' },
+    { path: './fonts/Nohemi/Regular.woff', weight: '400', style: 'normal' },
+    { path: './fonts/Nohemi/Medium.woff', weight: '500', style: 'normal' },
+    { path: './fonts/Nohemi/SemiBold.woff', weight: '600', style: 'normal' },
+    { path: './fonts/Nohemi/Bold.woff', weight: '700', style: 'normal' },
+    { path: './fonts/Nohemi/ExtraBold.woff', weight: '800', style: 'normal' },
+  ],
+  display: 'swap',
+  variable: '--font-nohemi',
+  fallback: ['system-ui', 'sans-serif'],
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL(PHOTO_WEBSITE_URL),
@@ -81,7 +97,7 @@ export default function RootLayout({
   const GA_ID = 'G-G4SQVX634K'
 
   return (
-    <html lang='en'>
+    <html lang='en' className={nohemi.variable}>
       <head>
         <link
           rel='preconnect'
