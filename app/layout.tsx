@@ -5,6 +5,7 @@ import './globals.scss'
 import Navbar from '@/components/Common/Navbar'
 import { PHOTO_WEBSITE_URL } from '@/data/contact'
 import LogoButton from '@/components/Common/LogoButton'
+import NavigationTracker from '@/components/Common/NavigationTracker'
 
 const nohemi = localFont({
   src: [
@@ -128,6 +129,7 @@ export default function RootLayout({
             });
           `}
         </Script>
+        <NavigationTracker />
         <LogoButton />
         <Navbar />
         <main id='main'>{children}</main>
