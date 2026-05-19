@@ -32,7 +32,7 @@ const Collections = () => {
               <div className={styles.imageContainer}>
                 <Image
                   src={category.imgSrc}
-                  alt={category.name}
+                  alt=''
                   width={3120}
                   height={2080}
                   sizes='(max-width: 992px) 60vw, 40vw'

@@ -30,7 +30,7 @@ export default function PhotoThumbnail({
         }
       }}
     >
-      {isThumbnailMode ? <h1>{photo.id}.webp</h1> : ''}
+      {isThumbnailMode ? <span>{photo.id}.webp</span> : ''}
       {src && (
         <Image
           className={`${styles.fullImage} ${fullLoaded ? styles.loaded : ''}`}

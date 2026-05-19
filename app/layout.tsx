@@ -111,6 +111,9 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <a href='#main' className='visually-hidden-focusable'>
+          Skip to content
+        </a>
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
           strategy='afterInteractive'
@@ -127,7 +130,7 @@ export default function RootLayout({
         </Script>
         <LogoButton />
         <Navbar />
-        {children}
+        <main id='main'>{children}</main>
       </body>
     </html>
   )

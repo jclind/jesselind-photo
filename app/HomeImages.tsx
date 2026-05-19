@@ -43,7 +43,6 @@ const HomeImages = () => {
         <Link
           href='/all-photos/00176'
           className={`${styles.displayedImg} ${styles.img1}`}
-          aria-label='Link to photo 00176'
         >
           <Image
             priority
@@ -59,7 +58,6 @@ const HomeImages = () => {
         <Link
           href='/all-photos/00130'
           className={`${styles.displayedImg} ${styles.img2}`}
-          aria-label='Link to photo 00130'
         >
           <Image
             loading='eager'
@@ -74,7 +72,6 @@ const HomeImages = () => {
         <Link
           href='/all-photos/00170'
           className={`${styles.displayedImg} ${styles.img3}`}
-          aria-label='Link to photo 00170'
         >
           <Image
             loading='eager'
@@ -89,7 +86,6 @@ const HomeImages = () => {
         <Link
           href='/all-photos/00173'
           className={`${styles.displayedImg} ${styles.img4}`}
-          aria-label='Link to photo 00173'
         >
           <Image
             loading='eager'
@@ -104,7 +100,6 @@ const HomeImages = () => {
         <Link
           href='/all-photos/00138'
           className={`${styles.displayedImg} ${styles.img5}`}
-          aria-label='Link to photo 00138'
         >
           <Image
             loading='eager'
@@ -119,7 +114,6 @@ const HomeImages = () => {
         <Link
           href='/all-photos/00174'
           className={`${styles.displayedImg} ${styles.img6}`}
-          aria-label='Link to photo 00174'
         >
           <Image
             loading='eager'
@@ -134,7 +128,6 @@ const HomeImages = () => {
         <Link
           href='/all-photos/00181'
           className={`${styles.displayedImg} ${styles.img7}`}
-          aria-label='Link to photo 00181'
         >
           <Image
             loading='eager'
@@ -149,7 +142,6 @@ const HomeImages = () => {
         <Link
           href='/all-photos/00188'
           className={`${styles.displayedImg} ${styles.img8}`}
-          aria-label='Link to photo 00188'
         >
           <Image
             loading='eager'
@@ -164,7 +156,6 @@ const HomeImages = () => {
         <Link
           href='/all-photos/00185'
           className={`${styles.displayedImg} ${styles.img9}`}
-          aria-label='Link to photo 00185'
         >
           <Image
             loading='eager'

@@ -227,3 +227,45 @@ a[href^='tel'] {
   color: $primary-text; /* Or any color that contrasts with the background */
   text-decoration: none; /* Optional: removes underline */
 }
+
+// Skip-to-content link: visually hidden until focused
+.visually-hidden-focusable {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+
+  &:focus,
+  &:focus-visible {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    width: auto;
+    height: auto;
+    padding: 8px 12px;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+    background: $primary-background;
+    color: $primary-text;
+    z-index: 1000;
+    text-decoration: underline;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

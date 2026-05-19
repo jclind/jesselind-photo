@@ -86,6 +86,7 @@ const GalleryTemplate = ({
         className={styles.toggle_mode_btn}
         onClick={handleModeToggle}
         aria-label='Toggle view mode'
+        aria-pressed={isThumbnailMode}
       >
         {isThumbnailMode ? <LayoutGrid /> : <PanelsTopLeft />}
       </button>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import styles from './Navbar.module.scss'
 import { usePathname } from 'next/navigation'
@@ -8,12 +8,25 @@ import { usePathname } from 'next/navigation'
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+  const hamburgerRef = useRef<HTMLButtonElement>(null)
 
   const toggleIsOpen = () => setIsOpen(state => !state)
 
   useEffect(() => {
     setIsOpen(false)
   }, [pathname])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false)
+        hamburgerRef.current?.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen])
 
   // Lock/unlock body scroll when menu is open
   useEffect(() => {
@@ -44,6 +57,7 @@ const Navbar = () => {
   return (
     <>
       <button
+        ref={hamburgerRef}
         className={styles.hamburger}
         onClick={toggleIsOpen}
         aria-label={isOpen ? 'Close navigation menu' : 'Open navigation menu'}

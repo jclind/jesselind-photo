@@ -66,6 +66,26 @@ const PhotoViewerPage = ({ params, filter, path }: PageProps) => {
     router.push(`${path}/${nextPhoto.id}`)
   }
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      const target = e.target as HTMLElement | null
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return
+      }
+      if (e.key === 'ArrowLeft') handleClickPrev()
+      else handleClickNext()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [prevPhoto, nextPhoto])
+
   return (
     <div className={styles.SinglePhoto}>
       <div className={styles.content}>
@@ -75,12 +95,14 @@ const PhotoViewerPage = ({ params, filter, path }: PageProps) => {
           <button
             onClick={handleClickPrev}
             className={styles.prev_btn}
-            aria-label='Previous photo'
+            aria-hidden='true'
+            tabIndex={-1}
           ></button>
           <button
             onClick={handleClickNext}
             className={styles.next_btn}
-            aria-label='Next photo'
+            aria-hidden='true'
+            tabIndex={-1}
           ></button>
         </div>
 

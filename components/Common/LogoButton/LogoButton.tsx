@@ -13,7 +13,7 @@ const LogoButton = () => {
   const showLogo = pathname !== '/' && !pathname.includes('admin')
   if (!showLogo) return null
   return (
-    <Link href='/' className={styles.nav_logo} aria-label='Home link'>
+    <Link href='/' className={styles.nav_logo} aria-label='Home'>
       <Image
         src='/images/logo.webp'
         alt='jesse lind photography logo'
