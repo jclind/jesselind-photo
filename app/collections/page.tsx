@@ -22,7 +22,6 @@ const Collections = () => {
             <Link
               key={category.name}
               href={category.path}
-              className={index > 3 ? styles.imgToTop : ''}
               data-category-name={category.name}
             >
               <span className={styles.leftNumbers}>{`${index < 9 ? '0' : ''}${
