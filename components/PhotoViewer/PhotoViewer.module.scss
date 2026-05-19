@@ -29,6 +29,10 @@
         top: 0;
         height: 100%;
         width: 50%;
+
+        &:focus-visible {
+          outline: none;
+        }
       }
       .next_btn {
         right: 0;

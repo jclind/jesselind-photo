@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getImageProps } from 'next/image'
 import { preload } from 'react-dom'
@@ -26,6 +26,10 @@ const PhotoViewerPage = ({ params, filter, path }: PageProps) => {
     usePhotoCollection({ initialPhotoID: photoID, filter })
 
   const [showLoader, setShowLoader] = useState(false)
+
+  const prevBtnRef = useRef<HTMLButtonElement>(null)
+  const nextBtnRef = useRef<HTMLButtonElement>(null)
+  const lastDirectionRef = useRef<'prev' | 'next' | null>(null)
 
   useEffect(() => {
     if (!photoLoading) {
@@ -58,13 +62,24 @@ const PhotoViewerPage = ({ params, filter, path }: PageProps) => {
 
   const handleClickPrev = () => {
     if (!prevPhoto) return
+    lastDirectionRef.current = 'prev'
     router.push(`${path}/${prevPhoto.id}`)
   }
 
   const handleClickNext = () => {
     if (!nextPhoto) return
+    lastDirectionRef.current = 'next'
     router.push(`${path}/${nextPhoto.id}`)
   }
+
+  useEffect(() => {
+    const direction = lastDirectionRef.current
+    if (!direction) return
+    const target =
+      direction === 'prev' ? prevBtnRef.current : nextBtnRef.current
+    target?.focus()
+    lastDirectionRef.current = null
+  }, [photoID])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -110,6 +125,8 @@ const PhotoViewerPage = ({ params, filter, path }: PageProps) => {
           handleClickPrev={handleClickPrev}
           handleClickNext={handleClickNext}
           path={path}
+          prevBtnRef={prevBtnRef}
+          nextBtnRef={nextBtnRef}
         />
 
         <InfoDisplay photoInfo={photo} />
