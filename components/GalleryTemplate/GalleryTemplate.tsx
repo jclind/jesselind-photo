@@ -32,9 +32,11 @@ const GalleryTemplate = ({
   const [isThumbnailMode, setIsThumbnailMode] = useState(true)
   const [liveMessage, setLiveMessage] = useState('')
   const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const fetchingRef = useRef(false)
 
   const loadMore = useCallback(async () => {
-    if (loading || !hasMore) return
+    if (fetchingRef.current || !hasMore) return
+    fetchingRef.current = true
     setLoading(true)
     try {
       const { photos: newPhotos, lastDoc: newLastDoc } = await fetchPhotos(
@@ -55,8 +57,9 @@ const GalleryTemplate = ({
       if (!newLastDoc) setHasMore(false)
     } finally {
       setLoading(false)
+      fetchingRef.current = false
     }
-  }, [fetchPhotos, lastDoc, loading, hasMore])
+  }, [fetchPhotos, lastDoc, hasMore])
 
   useEffect(() => {
     loadMore()
