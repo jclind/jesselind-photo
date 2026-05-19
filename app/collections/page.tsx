@@ -18,7 +18,7 @@ const Collections = () => {
         </Link>
 
         <div className={styles.links}>
-          {categories.map((category, index) => (
+          {categories.filter(c => !c.hidden).map((category, index) => (
             <Link
               key={category.name}
               href={category.path}

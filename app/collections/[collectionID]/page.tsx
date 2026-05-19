@@ -7,9 +7,9 @@ import { buildCollectionPageLd } from '@/lib/jsonLd'
 const titleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase())
 
 export const generateStaticParams = async () => {
-  return categories.map(c => ({
-    collectionID: c.path.replace(/^\/collections\//, ''),
-  }))
+  return categories
+    .filter(c => !c.hidden)
+    .map(c => ({ collectionID: c.slug }))
 }
 
 export const generateMetadata = async ({
@@ -18,9 +18,7 @@ export const generateMetadata = async ({
   params: Promise<{ collectionID: string }>
 }) => {
   const { collectionID } = await params
-  const category = categories.find(
-    c => c.path === `/collections/${collectionID}`
-  )
+  const category = categories.find(c => c.slug === collectionID)
   const displayName = category ? titleCase(category.name) : collectionID
   const title = `${displayName || 'Collection'} | Jesse Lind Photography`
   const description = category

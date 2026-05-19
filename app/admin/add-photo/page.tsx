@@ -323,7 +323,7 @@ export default function AddPhoto() {
             >
               <option value=''>Select category (optional)</option>
               {categories.map((cat: CollectionType) => (
-                <option key={cat.name} value={cat.name}>
+                <option key={cat.slug} value={cat.slug}>
                   {cat.name}
                 </option>
               ))}
