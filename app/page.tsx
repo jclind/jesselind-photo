@@ -1,6 +1,8 @@
 import Image from 'next/image'
 import styles from './page.module.scss'
 import HomeImages from './HomeImages'
+import JsonLd from '@/components/JsonLd'
+import { buildSiteAndPersonLd } from '@/lib/jsonLd'
 
 export const metadata = {
   title: 'Home | Jesse Lind Photography',
@@ -8,6 +10,7 @@ export const metadata = {
 export default function Home() {
   return (
     <div className={styles.hero}>
+      <JsonLd data={buildSiteAndPersonLd()} />
       <div className={styles.content}>
         <Image
           src='/images/logo.webp'

@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Jesse Lind Photography',
     description: 'Explore curated galleries and projects by Jesse Lind.',
-    images: ['/default-og.png'],
+    images: ['/default-og.webp'],
   },
   icons: [
     // Desktop favicons
