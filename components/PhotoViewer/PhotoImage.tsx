@@ -7,6 +7,11 @@ interface PhotoImageProps {
   photo: Photo
 }
 
+// generateBlurPlaceholder always returns `data:image/jpeg;base64,<base64>`.
+// Anything else in this field is a forged doc — drop it before it reaches the
+// CSS url() string and can break out of the quoted context.
+const VALID_BLUR = /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/
+
 const PhotoImage = ({ photo }: PhotoImageProps) => {
   const [loaded, setLoaded] = useState(false)
 
@@ -16,13 +21,18 @@ const PhotoImage = ({ photo }: PhotoImageProps) => {
 
   if (!photo.fullUrl) return null
 
+  const safeBlur =
+    photo.blurDataURL && VALID_BLUR.test(photo.blurDataURL)
+      ? photo.blurDataURL
+      : null
+
   return (
     <div
       className={styles.photoFrame}
       style={{
         aspectRatio: `${photo.width} / ${photo.height}`,
-        ...(photo.blurDataURL && {
-          backgroundImage: `url("${photo.blurDataURL}")`,
+        ...(safeBlur && {
+          backgroundImage: `url("${safeBlur}")`,
         }),
       }}
     >

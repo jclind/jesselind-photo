@@ -19,6 +19,9 @@ import AdminGate from '@/components/AdminGate'
 import { getPhotoID } from '@/util/reSerializePhotos'
 import { generateBlurPlaceholder } from '@/util/generateBlurPlaceholder'
 
+const MAX_FILE_MB = 20
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+
 export default function AddPhoto() {
   // Metadata inputs that apply to all files
   const [title, setTitle] = useState('')
@@ -204,11 +207,35 @@ export default function AddPhoto() {
               )}
               <input
                 type='file'
-                accept='image/*'
+                accept={ALLOWED_TYPES.join(',')}
                 multiple
-                onChange={e =>
-                  setFiles(e.target.files ? Array.from(e.target.files) : [])
-                }
+                onChange={e => {
+                  const picked = e.target.files
+                    ? Array.from(e.target.files)
+                    : []
+                  const rejected: string[] = []
+                  const accepted = picked.filter(file => {
+                    if (!ALLOWED_TYPES.includes(file.type)) {
+                      rejected.push(
+                        `${file.name}: unsupported type (${file.type || 'unknown'})`
+                      )
+                      return false
+                    }
+                    if (file.size > MAX_FILE_MB * 1024 * 1024) {
+                      rejected.push(
+                        `${file.name}: too large (${(file.size / 1024 / 1024).toFixed(1)} MB, max ${MAX_FILE_MB} MB)`
+                      )
+                      return false
+                    }
+                    return true
+                  })
+                  if (rejected.length > 0) {
+                    alert(
+                      `Skipped ${rejected.length} file(s):\n${rejected.join('\n')}`
+                    )
+                  }
+                  setFiles(accepted)
+                }}
               />
             </label>
             <input

@@ -33,6 +33,23 @@ export const backfillBlurPlaceholders = async (): Promise<{
       skipped++
       continue
     }
+    // Only ever fetch from Firebase Storage. A doc with a non-Firebase URL
+    // (forged or accidental) would otherwise turn this admin tool into an
+    // arbitrary-URL GET from the admin's network.
+    try {
+      const parsed = new URL(photo.thumbnailUrl)
+      if (parsed.hostname !== 'firebasestorage.googleapis.com') {
+        console.warn(
+          `backfill skipped ${photo.id}: untrusted host ${parsed.hostname}`
+        )
+        skipped++
+        continue
+      }
+    } catch {
+      console.warn(`backfill skipped ${photo.id}: invalid thumbnailUrl`)
+      skipped++
+      continue
+    }
     try {
       const res = await fetch(photo.thumbnailUrl, { mode: 'cors' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
