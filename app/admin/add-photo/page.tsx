@@ -36,6 +36,12 @@ export default function AddPhoto() {
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
 
   const [loading, setLoading] = useState(false)
+  const [fileError, setFileError] = useState<string | null>(null)
+  const [dateError, setDateError] = useState<string | null>(null)
+  const [formStatus, setFormStatus] = useState<{
+    kind: 'success' | 'error'
+    message: string
+  } | null>(null)
 
   // Generate previews when files change
   useEffect(() => {
@@ -73,9 +79,18 @@ export default function AddPhoto() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (files.length === 0) return alert('Please select files.')
+    setFormStatus(null)
+    setFileError(null)
+    setDateError(null)
 
-    if (!photoDate) return alert('Please enter a valid date')
+    if (files.length === 0) {
+      setFileError('Please select at least one image.')
+      return
+    }
+    if (!photoDate) {
+      setDateError('Please enter a valid date.')
+      return
+    }
     const createdDate = new Date(photoDate)
 
     setLoading(true)
@@ -154,7 +169,10 @@ export default function AddPhoto() {
         transaction.update(counterRef, { lastSequenceNumber })
       })
 
-      alert('All photos uploaded!')
+      setFormStatus({
+        kind: 'success',
+        message: `Uploaded ${files.length} photo${files.length === 1 ? '' : 's'}.`,
+      })
       // Reset form
       setFiles([])
       setTitle('')
@@ -165,7 +183,7 @@ export default function AddPhoto() {
       setPhotoDate('')
     } catch (error) {
       console.error(error)
-      alert('Error uploading photos.')
+      setFormStatus({ kind: 'error', message: 'Error uploading photos.' })
     } finally {
       setLoading(false)
     }
@@ -182,28 +200,31 @@ export default function AddPhoto() {
           >
             <label className={styles.fileInputLabel}>
               {previewUrls.length > 0 ? (
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: '0.5rem',
-                    flexWrap: 'wrap',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {previewUrls.map((url, i) => (
-                    <img
-                      key={i}
-                      src={url}
-                      alt={`Preview ${i + 1}`}
-                      style={{
-                        maxWidth: '100px',
-                        maxHeight: '100px',
-                        borderRadius: '8px',
-                        objectFit: 'cover',
-                      }}
-                    />
-                  ))}
-                </div>
+                <>
+                  <span className='visually-hidden'>Choose images</span>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '0.5rem',
+                      flexWrap: 'wrap',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {previewUrls.map((url, i) => (
+                      <img
+                        key={i}
+                        src={url}
+                        alt={`Preview ${i + 1}`}
+                        style={{
+                          maxWidth: '100px',
+                          maxHeight: '100px',
+                          borderRadius: '8px',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    ))}
+                  </div>
+                </>
               ) : (
                 'Choose images...'
               )}
@@ -211,6 +232,7 @@ export default function AddPhoto() {
                 type='file'
                 accept={ALLOWED_TYPES.join(',')}
                 multiple
+                aria-describedby='files-error'
                 onChange={e => {
                   const picked = e.target.files
                     ? Array.from(e.target.files)
@@ -231,34 +253,71 @@ export default function AddPhoto() {
                     }
                     return true
                   })
-                  if (rejected.length > 0) {
-                    alert(
-                      `Skipped ${rejected.length} file(s):\n${rejected.join('\n')}`
-                    )
-                  }
+                  setFileError(
+                    rejected.length > 0
+                      ? `Skipped ${rejected.length} file(s): ${rejected.join('; ')}`
+                      : null
+                  )
                   setFiles(accepted)
                 }}
               />
             </label>
+            <div
+              id='files-error'
+              role='alert'
+              aria-live='polite'
+              className={styles.fieldError}
+            >
+              {fileError}
+            </div>
+
+            <label htmlFor='photo-title' className='visually-hidden'>
+              Title (optional)
+            </label>
             <input
+              id='photo-title'
               type='text'
               placeholder='Title (optional)'
               value={title}
               onChange={e => setTitle(e.target.value)}
             />
+
+            <label htmlFor='photo-date'>Date taken</label>
             <input
+              id='photo-date'
               type='date'
               value={photoDate}
-              onChange={e => setPhotoDate(e.target.value)}
-              placeholder='Date taken (optional)'
+              onChange={e => {
+                setPhotoDate(e.target.value)
+                if (e.target.value) setDateError(null)
+              }}
+              aria-describedby='date-error'
             />
+            <div
+              id='date-error'
+              role='alert'
+              aria-live='polite'
+              className={styles.fieldError}
+            >
+              {dateError}
+            </div>
+
+            <label htmlFor='photo-location' className='visually-hidden'>
+              Location (optional)
+            </label>
             <input
+              id='photo-location'
               type='text'
               placeholder='Location (optional)'
               value={location}
               onChange={e => setLocation(e.target.value)}
             />
+
+            <label htmlFor='photo-category' className='visually-hidden'>
+              Category
+            </label>
             <select
+              id='photo-category'
               value={category}
               onChange={e => setCategory(e.target.value)}
             >
@@ -269,7 +328,12 @@ export default function AddPhoto() {
                 </option>
               ))}
             </select>
+
+            <label htmlFor='photo-project' className='visually-hidden'>
+              Project
+            </label>
             <select
+              id='photo-project'
               value={projectID}
               onChange={e => setProjectID(e.target.value)}
             >
@@ -280,14 +344,32 @@ export default function AddPhoto() {
                 </option>
               ))}
             </select>
+
+            <label htmlFor='photo-description' className='visually-hidden'>
+              Description (optional)
+            </label>
             <textarea
+              id='photo-description'
               placeholder='Description (optional)'
               value={description}
               onChange={e => setDescription(e.target.value)}
             />
+
             <button type='submit' disabled={loading}>
               {loading ? 'Uploading...' : 'Upload Photos'}
             </button>
+
+            <div
+              role='status'
+              aria-live='polite'
+              className={
+                formStatus?.kind === 'error'
+                  ? styles.formError
+                  : styles.formSuccess
+              }
+            >
+              {formStatus?.message}
+            </div>
           </form>
         </div>
       </div>

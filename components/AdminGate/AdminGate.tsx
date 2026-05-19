@@ -53,36 +53,49 @@ const AdminGate = ({ children }: { children: React.ReactNode }) => {
 
   if (status === 'authorized') return <>{children}</>
 
+  const canSubmit = email.length > 0 && password.length > 0 && !submitting
+
   return (
     <div className={styles.adminGate}>
       <div className={styles.loginBox}>
         <h1>Admin Login</h1>
+        <label htmlFor='admin-email' className='visually-hidden'>
+          Email
+        </label>
         <input
+          id='admin-email'
           type='email'
           placeholder='email'
           value={email}
           onChange={e => setEmail(e.target.value)}
           autoComplete='email'
         />
+        <label htmlFor='admin-password' className='visually-hidden'>
+          Password
+        </label>
         <input
+          id='admin-password'
           type='password'
           placeholder='password'
           value={password}
           onChange={e => setPassword(e.target.value)}
           autoComplete='current-password'
           onKeyDown={e => {
-            if (e.key === 'Enter') handleLogin()
+            if (e.key === 'Enter' && canSubmit) handleLogin()
           }}
         />
-        {email.length > 0 && password.length > 0 && (
-          <button onClick={handleLogin} disabled={submitting}>
-            {submitting ? 'Logging in…' : 'Login'}
-          </button>
-        )}
-        {error && <p>{error}</p>}
-        {status === 'unauthorized' && (
-          <p>This account is not authorized. <button onClick={logout}>Sign out</button></p>
-        )}
+        <button onClick={handleLogin} disabled={!canSubmit}>
+          {submitting ? 'Logging in…' : 'Login'}
+        </button>
+        <div role='alert' aria-live='polite'>
+          {error && <p>{error}</p>}
+          {status === 'unauthorized' && (
+            <p>
+              This account is not authorized.{' '}
+              <button onClick={logout}>Sign out</button>
+            </p>
+          )}
+        </div>
       </div>
     </div>
   )
