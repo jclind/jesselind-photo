@@ -107,8 +107,15 @@ export function usePhotoCollection({
     const load = async () => {
       const store = usePhotoStore.getState()
 
-      // 1. Current photo — cache hit, else fetch
-      let current: Photo | null = store.cache[initialPhotoID] ?? null
+      // 1. Current photo — cache hit, else fetch. The cache is shared across
+      // filter scopes, so a cached photo for this id only counts as a hit when
+      // it also matches the active filter; otherwise fall through to fetchOne
+      // (which enforces the filter and returns null on mismatch).
+      const cached = store.cache[initialPhotoID]
+      let current: Photo | null =
+        cached && (!filter || cached[filter.field] === filter.value)
+          ? cached
+          : null
 
       if (current) {
         setPhoto(current)
