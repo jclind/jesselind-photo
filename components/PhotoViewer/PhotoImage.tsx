@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
 import styles from './PhotoViewer.module.scss'
 import { Photo } from '@/types/Photo'
+import { getPhotoAlt } from '@/util/getPhotoAlt'
 
 interface PhotoImageProps {
   photo: Photo
@@ -38,7 +39,7 @@ const PhotoImage = ({ photo }: PhotoImageProps) => {
     >
       <Image
         src={photo.fullUrl}
-        alt={photo.title || 'Photo'}
+        alt={getPhotoAlt(photo)}
         width={photo.width}
         height={photo.height}
         draggable={false}

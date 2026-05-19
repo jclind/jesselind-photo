@@ -5,6 +5,7 @@ import styles from './GalleryTemplate.module.scss'
 import { Photo } from '@/types/Photo'
 import Link from 'next/link'
 import Image from 'next/image'
+import { getPhotoAlt } from '@/util/getPhotoAlt'
 
 export default function PhotoThumbnail({
   photo,
@@ -35,7 +36,7 @@ export default function PhotoThumbnail({
         <Image
           className={`${styles.fullImage} ${fullLoaded ? styles.loaded : ''}`}
           src={src}
-          alt={photo.title}
+          alt={getPhotoAlt(photo)}
           loading='lazy'
           onLoad={() => setFullLoaded(true)}
           width={photo.width}

@@ -7,6 +7,7 @@ import { Photo, PhotoRowsType } from '@/types/Photo'
 import Link from 'next/link'
 import Image from 'next/image'
 import { getAspectRatioFromPhoto } from '@/util/photoDimentionFns'
+import { getPhotoAlt } from '@/util/getPhotoAlt'
 
 const PhotoRows = ({
   photos,
@@ -93,7 +94,7 @@ const PhotoRows = ({
                   {photo.fullUrl && (
                     <Image
                       src={photo.fullUrl}
-                      alt={photo.title || ''}
+                      alt={getPhotoAlt(photo)}
                       width={Math.round(w)}
                       height={Math.round(h)}
                       sizes='(max-width: 768px) 100vw, 60vw'
