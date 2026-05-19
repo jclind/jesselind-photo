@@ -48,6 +48,7 @@ const Gallery = () => {
       fetchPhotos={fetchPhotos}
       pageSize={PAGE_SIZE}
       imagePath={imagePath}
+      title='All Photos'
     />
   )
 }

@@ -63,6 +63,7 @@ const CollectionGallery = () => {
       fetchPhotos={fetchPhotos}
       pageSize={PAGE_SIZE}
       imagePath={imagePath}
+      title={category.name}
     />
   )
 }

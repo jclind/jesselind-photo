@@ -15,6 +15,7 @@ type GalleryProps = {
   pageSize?: number
   imagePath: string
   topGapSmall?: boolean
+  title?: string
 }
 
 const GalleryTemplate = ({
@@ -22,12 +23,14 @@ const GalleryTemplate = ({
   pageSize = 10,
   imagePath,
   topGapSmall,
+  title,
 }: GalleryProps) => {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const [loading, setLoading] = useState(false)
   const [isThumbnailMode, setIsThumbnailMode] = useState(true)
+  const [liveMessage, setLiveMessage] = useState('')
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   const loadMore = useCallback(async () => {
@@ -37,7 +40,17 @@ const GalleryTemplate = ({
       const { photos: newPhotos, lastDoc: newLastDoc } = await fetchPhotos(
         lastDoc ?? undefined
       )
-      setPhotos(prev => [...prev, ...newPhotos])
+      setPhotos(prev => {
+        const next = [...prev, ...newPhotos]
+        if (newPhotos.length > 0) {
+          setLiveMessage(
+            `Loaded ${newPhotos.length} more photo${
+              newPhotos.length === 1 ? '' : 's'
+            }. Total ${next.length}.`
+          )
+        }
+        return next
+      })
       setLastDoc(newLastDoc)
       if (!newLastDoc) setHasMore(false)
     } finally {
@@ -90,25 +103,32 @@ const GalleryTemplate = ({
       >
         {isThumbnailMode ? <LayoutGrid /> : <PanelsTopLeft />}
       </button>
+      {title && <h1 className={styles.title}>{title}</h1>}
       <div
         className={`${styles.content} ${topGapSmall ? styles.topGapSmall : ''}`}
       >
-        <div className={styles.grid}>
-          {isThumbnailMode ? (
-            photos.map((photo: Photo) => (
-              <PhotoThumbnail
-                key={photo.id}
-                photo={photo}
-                isThumbnailMode={isThumbnailMode}
-                createFullImagePath={createFullImagePath}
-              />
-            ))
-          ) : (
+        {isThumbnailMode ? (
+          <ul role='list' className={styles.grid}>
+            {photos.map((photo: Photo) => (
+              <li key={photo.id}>
+                <PhotoThumbnail
+                  photo={photo}
+                  isThumbnailMode={isThumbnailMode}
+                  createFullImagePath={createFullImagePath}
+                />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className={styles.grid}>
             <PhotoRows
               photos={photos}
               createFullImagePath={createFullImagePath}
             />
-          )}
+          </div>
+        )}
+        <div role='status' aria-live='polite' className='visually-hidden'>
+          {liveMessage}
         </div>
         {hasMore && <div ref={sentinelRef} aria-hidden />}
       </div>

@@ -12,7 +12,7 @@ const HoverInteractivity = () => {
     if (window.innerWidth < BREAKPOINT_LG) return
     const links = document.querySelectorAll(`[data-category-name]`)
 
-    const handleMouseOver = (event: Event) => {
+    const handleActivate = (event: Event) => {
       const target = event.currentTarget as HTMLElement
       const categoryName = target.getAttribute('data-category-name')
       if (categoryName) {
@@ -20,21 +20,23 @@ const HoverInteractivity = () => {
       }
     }
 
-    const handleMouseLeave = () => {
+    const handleDeactivate = () => {
       setCurrHoveredName(null)
     }
 
-    // Add event listeners
     links.forEach(link => {
-      link.addEventListener('mouseenter', handleMouseOver)
-      link.addEventListener('mouseleave', handleMouseLeave)
+      link.addEventListener('mouseenter', handleActivate)
+      link.addEventListener('mouseleave', handleDeactivate)
+      link.addEventListener('focusin', handleActivate)
+      link.addEventListener('focusout', handleDeactivate)
     })
 
-    // Cleanup
     return () => {
       links.forEach(link => {
-        link.removeEventListener('mouseenter', handleMouseOver)
-        link.removeEventListener('mouseleave', handleMouseLeave)
+        link.removeEventListener('mouseenter', handleActivate)
+        link.removeEventListener('mouseleave', handleDeactivate)
+        link.removeEventListener('focusin', handleActivate)
+        link.removeEventListener('focusout', handleDeactivate)
       })
     }
   }, [])
