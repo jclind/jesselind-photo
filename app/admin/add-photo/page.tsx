@@ -99,13 +99,20 @@ export default function AddPhoto() {
         }
 
         for (const file of files) {
-          // Generate a sanitized ID from filename
-
           // Get dimensions
           const { width, height } = await getImageDimensionsFromFile(file)
 
+          // Assign id up front so the Storage path embeds it. Without this
+          // prefix, two photos sharing a filename (very common with default
+          // camera names like IMG_0001.jpg) would overwrite each other.
+          lastSequenceNumber++
+          const id = getPhotoID(lastSequenceNumber)
+          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+          const storagePath = `full/${id}-${safeName}`
+          const thumbnailPath = `thumbnails/${id}-${safeName}`
+
           // Upload full image
-          const fullRef = ref(storage, `full/${file.name}`)
+          const fullRef = ref(storage, storagePath)
           await uploadBytes(fullRef, file)
           const fullUrl = await getDownloadURL(fullRef)
 
@@ -114,17 +121,12 @@ export default function AddPhoto() {
             maxWidthOrHeight: 500,
             useWebWorker: true,
           })
-          const thumbRef = ref(storage, `thumbnails/${file.name}`)
+          const thumbRef = ref(storage, thumbnailPath)
           await uploadBytes(thumbRef, thumbBlob)
           const thumbUrl = await getDownloadURL(thumbRef)
 
           // Tiny base64 placeholder for <Image placeholder='blur'>
           const blurDataURL = await generateBlurPlaceholder(thumbBlob)
-
-          // Increment sequence number
-          lastSequenceNumber++
-
-          const id = getPhotoID(lastSequenceNumber)
 
           // Add photo doc
           const photoRef = doc(collection(db, 'photos'))
@@ -134,8 +136,8 @@ export default function AddPhoto() {
             category,
             description,
             location: location || null,
-            storagePath: `full/${file.name}`,
-            thumbnailPath: `thumbnails/${file.name}`,
+            storagePath,
+            thumbnailPath,
             projectID: projectID || null,
             fullUrl,
             thumbnailUrl: thumbUrl,

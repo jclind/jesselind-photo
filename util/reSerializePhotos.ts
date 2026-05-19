@@ -28,8 +28,18 @@ export const reSerializePhotos = async () => {
       }
     )
 
-    // Sort by photoDate (ascending)
-    photos.sort((a, b) => a.photoDate.seconds - b.photoDate.seconds)
+    // Sort by photoDate (ascending). Cascade through nanoseconds, then docRef
+    // id, so photos sharing a second (common when photoDate comes from the
+    // day-resolution date picker) get a deterministic order across runs —
+    // otherwise getDocs's unspecified ordering would let the renumber shuffle
+    // them and break any external links to those photo ids.
+    photos.sort((a, b) => {
+      const s = a.photoDate.seconds - b.photoDate.seconds
+      if (s !== 0) return s
+      const n = (a.photoDate.nanoseconds ?? 0) - (b.photoDate.nanoseconds ?? 0)
+      if (n !== 0) return n
+      return a.docRef.id.localeCompare(b.docRef.id)
+    })
 
     const batch = writeBatch(db)
 
