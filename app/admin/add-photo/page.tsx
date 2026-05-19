@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import imageCompression from 'browser-image-compression'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import {
   collection,
@@ -10,7 +9,7 @@ import {
   Timestamp,
   runTransaction,
   doc,
-} from 'firebase/firestore'
+} from 'firebase/firestore/lite'
 import styles from './page.module.scss'
 import { db, storage } from '@/lib/firebase'
 import { categories, CollectionType } from '@/data/categories'
@@ -18,6 +17,10 @@ import { projects, ProjectType } from '@/data/projects'
 import AdminNav from '../AdminNav'
 import AdminGate from '@/components/AdminGate'
 import { getPhotoID } from '@/util/reSerializePhotos'
+import { generateBlurPlaceholder } from '@/util/generateBlurPlaceholder'
+
+const MAX_FILE_MB = 20
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 export default function AddPhoto() {
   // Metadata inputs that apply to all files
@@ -33,6 +36,12 @@ export default function AddPhoto() {
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
 
   const [loading, setLoading] = useState(false)
+  const [fileError, setFileError] = useState<string | null>(null)
+  const [dateError, setDateError] = useState<string | null>(null)
+  const [formStatus, setFormStatus] = useState<{
+    kind: 'success' | 'error'
+    message: string
+  } | null>(null)
 
   // Generate previews when files change
   useEffect(() => {
@@ -70,12 +79,26 @@ export default function AddPhoto() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (files.length === 0) return alert('Please select files.')
+    setFormStatus(null)
+    setFileError(null)
+    setDateError(null)
 
-    if (!photoDate) return alert('Please enter a valid date')
+    if (files.length === 0) {
+      setFileError('Please select at least one image.')
+      return
+    }
+    if (!photoDate) {
+      setDateError('Please enter a valid date.')
+      return
+    }
     const createdDate = new Date(photoDate)
 
     setLoading(true)
+
+    // Lazy-load the compression lib so its ~50 KB doesn't ship on page mount
+    const { default: imageCompression } = await import(
+      'browser-image-compression'
+    )
 
     try {
       const counterRef = doc(db, 'counters', 'photos')
@@ -91,13 +114,20 @@ export default function AddPhoto() {
         }
 
         for (const file of files) {
-          // Generate a sanitized ID from filename
-
           // Get dimensions
           const { width, height } = await getImageDimensionsFromFile(file)
 
+          // Assign id up front so the Storage path embeds it. Without this
+          // prefix, two photos sharing a filename (very common with default
+          // camera names like IMG_0001.jpg) would overwrite each other.
+          lastSequenceNumber++
+          const id = getPhotoID(lastSequenceNumber)
+          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+          const storagePath = `full/${id}-${safeName}`
+          const thumbnailPath = `thumbnails/${id}-${safeName}`
+
           // Upload full image
-          const fullRef = ref(storage, `full/${file.name}`)
+          const fullRef = ref(storage, storagePath)
           await uploadBytes(fullRef, file)
           const fullUrl = await getDownloadURL(fullRef)
 
@@ -106,14 +136,12 @@ export default function AddPhoto() {
             maxWidthOrHeight: 500,
             useWebWorker: true,
           })
-          const thumbRef = ref(storage, `thumbnails/${file.name}`)
+          const thumbRef = ref(storage, thumbnailPath)
           await uploadBytes(thumbRef, thumbBlob)
           const thumbUrl = await getDownloadURL(thumbRef)
 
-          // Increment sequence number
-          lastSequenceNumber++
-
-          const id = getPhotoID(lastSequenceNumber)
+          // Tiny base64 placeholder for <Image placeholder='blur'>
+          const blurDataURL = await generateBlurPlaceholder(thumbBlob)
 
           // Add photo doc
           const photoRef = doc(collection(db, 'photos'))
@@ -123,11 +151,12 @@ export default function AddPhoto() {
             category,
             description,
             location: location || null,
-            storagePath: `full/${file.name}`,
-            thumbnailPath: `thumbnails/${file.name}`,
+            storagePath,
+            thumbnailPath,
             projectID: projectID || null,
             fullUrl,
             thumbnailUrl: thumbUrl,
+            blurDataURL,
             width,
             height,
             createdAt: serverTimestamp(),
@@ -140,7 +169,10 @@ export default function AddPhoto() {
         transaction.update(counterRef, { lastSequenceNumber })
       })
 
-      alert('All photos uploaded!')
+      setFormStatus({
+        kind: 'success',
+        message: `Uploaded ${files.length} photo${files.length === 1 ? '' : 's'}.`,
+      })
       // Reset form
       setFiles([])
       setTitle('')
@@ -151,7 +183,7 @@ export default function AddPhoto() {
       setPhotoDate('')
     } catch (error) {
       console.error(error)
-      alert('Error uploading photos.')
+      setFormStatus({ kind: 'error', message: 'Error uploading photos.' })
     } finally {
       setLoading(false)
     }
@@ -168,59 +200,124 @@ export default function AddPhoto() {
           >
             <label className={styles.fileInputLabel}>
               {previewUrls.length > 0 ? (
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: '0.5rem',
-                    flexWrap: 'wrap',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {previewUrls.map((url, i) => (
-                    <img
-                      key={i}
-                      src={url}
-                      alt={`Preview ${i + 1}`}
-                      style={{
-                        maxWidth: '100px',
-                        maxHeight: '100px',
-                        borderRadius: '8px',
-                        objectFit: 'cover',
-                      }}
-                    />
-                  ))}
-                </div>
+                <>
+                  <span className='visually-hidden'>Choose images</span>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '0.5rem',
+                      flexWrap: 'wrap',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {previewUrls.map((url, i) => (
+                      <img
+                        key={i}
+                        src={url}
+                        alt={`Preview ${i + 1}`}
+                        style={{
+                          maxWidth: '100px',
+                          maxHeight: '100px',
+                          borderRadius: '8px',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    ))}
+                  </div>
+                </>
               ) : (
                 'Choose images...'
               )}
               <input
                 type='file'
-                accept='image/*'
+                accept={ALLOWED_TYPES.join(',')}
                 multiple
-                onChange={e =>
-                  setFiles(e.target.files ? Array.from(e.target.files) : [])
-                }
+                aria-describedby='files-error'
+                onChange={e => {
+                  const picked = e.target.files
+                    ? Array.from(e.target.files)
+                    : []
+                  const rejected: string[] = []
+                  const accepted = picked.filter(file => {
+                    if (!ALLOWED_TYPES.includes(file.type)) {
+                      rejected.push(
+                        `${file.name}: unsupported type (${file.type || 'unknown'})`
+                      )
+                      return false
+                    }
+                    if (file.size > MAX_FILE_MB * 1024 * 1024) {
+                      rejected.push(
+                        `${file.name}: too large (${(file.size / 1024 / 1024).toFixed(1)} MB, max ${MAX_FILE_MB} MB)`
+                      )
+                      return false
+                    }
+                    return true
+                  })
+                  setFileError(
+                    rejected.length > 0
+                      ? `Skipped ${rejected.length} file(s): ${rejected.join('; ')}`
+                      : null
+                  )
+                  setFiles(accepted)
+                }}
               />
             </label>
+            <div
+              id='files-error'
+              role='alert'
+              aria-live='polite'
+              className={styles.fieldError}
+            >
+              {fileError}
+            </div>
+
+            <label htmlFor='photo-title' className='visually-hidden'>
+              Title (optional)
+            </label>
             <input
+              id='photo-title'
               type='text'
               placeholder='Title (optional)'
               value={title}
               onChange={e => setTitle(e.target.value)}
             />
+
+            <label htmlFor='photo-date'>Date taken</label>
             <input
+              id='photo-date'
               type='date'
               value={photoDate}
-              onChange={e => setPhotoDate(e.target.value)}
-              placeholder='Date taken (optional)'
+              onChange={e => {
+                setPhotoDate(e.target.value)
+                if (e.target.value) setDateError(null)
+              }}
+              aria-describedby='date-error'
             />
+            <div
+              id='date-error'
+              role='alert'
+              aria-live='polite'
+              className={styles.fieldError}
+            >
+              {dateError}
+            </div>
+
+            <label htmlFor='photo-location' className='visually-hidden'>
+              Location (optional)
+            </label>
             <input
+              id='photo-location'
               type='text'
               placeholder='Location (optional)'
               value={location}
               onChange={e => setLocation(e.target.value)}
             />
+
+            <label htmlFor='photo-category' className='visually-hidden'>
+              Category
+            </label>
             <select
+              id='photo-category'
               value={category}
               onChange={e => setCategory(e.target.value)}
             >
@@ -231,7 +328,12 @@ export default function AddPhoto() {
                 </option>
               ))}
             </select>
+
+            <label htmlFor='photo-project' className='visually-hidden'>
+              Project
+            </label>
             <select
+              id='photo-project'
               value={projectID}
               onChange={e => setProjectID(e.target.value)}
             >
@@ -242,14 +344,32 @@ export default function AddPhoto() {
                 </option>
               ))}
             </select>
+
+            <label htmlFor='photo-description' className='visually-hidden'>
+              Description (optional)
+            </label>
             <textarea
+              id='photo-description'
               placeholder='Description (optional)'
               value={description}
               onChange={e => setDescription(e.target.value)}
             />
+
             <button type='submit' disabled={loading}>
               {loading ? 'Uploading...' : 'Upload Photos'}
             </button>
+
+            <div
+              role='status'
+              aria-live='polite'
+              className={
+                formStatus?.kind === 'error'
+                  ? styles.formError
+                  : styles.formSuccess
+              }
+            >
+              {formStatus?.message}
+            </div>
           </form>
         </div>
       </div>

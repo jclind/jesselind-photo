@@ -1,9 +1,25 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import Script from 'next/script'
+import localFont from 'next/font/local'
 import './globals.scss'
 import Navbar from '@/components/Common/Navbar'
 import { PHOTO_WEBSITE_URL } from '@/data/contact'
 import LogoButton from '@/components/Common/LogoButton'
+
+const nohemi = localFont({
+  src: [
+    { path: './fonts/Nohemi/ExtraLight.woff', weight: '200', style: 'normal' },
+    { path: './fonts/Nohemi/Light.woff', weight: '300', style: 'normal' },
+    { path: './fonts/Nohemi/Regular.woff', weight: '400', style: 'normal' },
+    { path: './fonts/Nohemi/Medium.woff', weight: '500', style: 'normal' },
+    { path: './fonts/Nohemi/SemiBold.woff', weight: '600', style: 'normal' },
+    { path: './fonts/Nohemi/Bold.woff', weight: '700', style: 'normal' },
+    { path: './fonts/Nohemi/ExtraBold.woff', weight: '800', style: 'normal' },
+  ],
+  display: 'swap',
+  variable: '--font-nohemi',
+  fallback: ['system-ui', 'sans-serif'],
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL(PHOTO_WEBSITE_URL),
@@ -30,7 +46,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Jesse Lind Photography',
     description: 'Explore curated galleries and projects by Jesse Lind.',
-    images: ['/default-og.png'],
+    images: ['/default-og.webp'],
   },
   icons: [
     // Desktop favicons
@@ -81,24 +97,8 @@ export default function RootLayout({
   const GA_ID = 'G-G4SQVX634K'
 
   return (
-    <html lang='en'>
+    <html lang='en' className={nohemi.variable}>
       <head>
-        <script
-          async
-          src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', '${GA_ID}', {
-                page_path: window.location.pathname,
-              });
-            `,
-          }}
-        />
         <link
           rel='preconnect'
           href='https://firebasestorage.googleapis.com'
@@ -111,9 +111,26 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <a href='#main' className='visually-hidden-focusable'>
+          Skip to content
+        </a>
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+          strategy='afterInteractive'
+        />
+        <Script id='ga-init' strategy='afterInteractive'>
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_ID}', {
+              page_path: window.location.pathname,
+            });
+          `}
+        </Script>
         <LogoButton />
         <Navbar />
-        {children}
+        <main id='main'>{children}</main>
       </body>
     </html>
   )

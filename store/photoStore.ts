@@ -1,23 +1,13 @@
-// src/store/photoStore.ts
 import { create } from 'zustand'
 import { Photo } from '@/types/Photo'
 
-export interface CachedPhoto {
-  photo: Photo
-  preloadedUrl?: string
-  width?: number
-  height?: number
-}
-
 interface PhotoStore {
-  cache: Record<string, CachedPhoto>
-  addPhoto: (photoID: string, data: CachedPhoto) => void
-  getPhoto: (photoID: string) => CachedPhoto | undefined
+  cache: Record<string, Photo>
+  addPhoto: (photo: Photo) => void
 }
 
-export const usePhotoStore = create<PhotoStore>((set, get) => ({
+export const usePhotoStore = create<PhotoStore>(set => ({
   cache: {},
-  addPhoto: (photoID, data) =>
-    set(state => ({ cache: { ...state.cache, [photoID]: data } })),
-  getPhoto: photoID => get().cache[photoID],
+  addPhoto: photo =>
+    set(state => ({ cache: { ...state.cache, [photo.id]: photo } })),
 }))

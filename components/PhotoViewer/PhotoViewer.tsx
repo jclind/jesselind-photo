@@ -1,20 +1,16 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { getImageProps } from 'next/image'
+import { preload } from 'react-dom'
 import styles from './PhotoViewer.module.scss'
 import PhotoLoader from './PhotoLoader'
 import PhotoImage from './PhotoImage'
 import PhotoControls from './PhotoControls'
 import { usePhotoCollection } from '@/hooks/usePhotoCollection'
 import InfoDisplay from './InfoDisplay'
-import { PhotoViewerFilterType, Photo } from '@/types/Photo'
-import Link from 'next/link'
-import {
-  getAspectRatioFromPhoto,
-  getPhotoWidthFromHeight,
-} from '@/util/photoDimentionFns'
-import { usePhotoStore } from '@/store/photoStore'
+import { PhotoViewerFilterType } from '@/types/Photo'
 
 interface PageProps {
   params: { photoID: string }
@@ -26,110 +22,102 @@ const PhotoViewerPage = ({ params, filter, path }: PageProps) => {
   const router = useRouter()
   const { photoID } = params
 
-  const store = usePhotoStore()
-
-  const { photo, prevPhoto, nextPhoto, timeoutMessage, collectionLoading } =
+  const { photo, prevPhoto, nextPhoto, error, photoLoading } =
     usePhotoCollection({ initialPhotoID: photoID, filter })
 
-  // Displayed photo state for smooth transitions
-  const [displayedPhoto, setDisplayedPhoto] = useState<Photo | null>(photo)
-  const [isLoading, setIsLoading] = useState(true)
   const [showLoader, setShowLoader] = useState(false)
 
+  const prevBtnRef = useRef<HTMLButtonElement>(null)
+  const nextBtnRef = useRef<HTMLButtonElement>(null)
+  const lastDirectionRef = useRef<'prev' | 'next' | null>(null)
+
   useEffect(() => {
-    if (!isLoading && !collectionLoading) {
-      setShowLoader(false) // immediately hide if not loading
+    if (!photoLoading) {
+      setShowLoader(false)
       return
     }
+    const timer = setTimeout(() => setShowLoader(true), 250)
+    return () => clearTimeout(timer)
+  }, [photoLoading])
 
-    const timer = setTimeout(() => {
-      setShowLoader(true)
-    }, 250) // 250ms delay
-
-    return () => clearTimeout(timer) // cleanup if loading finishes early
-  }, [isLoading, collectionLoading])
-
-  const getPhotoDimensionsOnPage = (
-    photo: Photo
-  ): { height: number; width: number } => {
-    if (!photo) return { height: 0, width: 0 }
-    const containerHeight =
-      document.getElementById('photoContainer')?.clientHeight || 0
-    return {
-      width: Number(getPhotoWidthFromHeight(photo, containerHeight).toFixed(2)),
-      height: Number(containerHeight.toFixed(2)),
-    }
-  }
-
-  // Displayed photo updated after image fully loads
+  // Preload neighbor photos via the same /_next/image URL that <PhotoImage>
+  // will request, so prev/next navigation hits the browser HTTP cache.
   useEffect(() => {
-    if (!photo || !photo.fullUrl) return
-
-    const cached = store.getPhoto(photo.id)
-    if (cached?.preloadedUrl) {
-      setDisplayedPhoto(cached.photo)
-      setIsLoading(false)
-      return
-    }
-
-    setIsLoading(true)
-    const img = new Image()
-    img.src = photo.fullUrl
-    img.onload = () => {
-      setDisplayedPhoto(photo)
-      setIsLoading(false)
-    }
-  }, [photo])
-
-  // Preload next/prev photos and store in cache
-  useEffect(() => {
-    const preloadPhoto = (currPhoto: Photo | null) => {
-      if (!currPhoto || !currPhoto.fullUrl) return
-      const { width, height } = getPhotoDimensionsOnPage(currPhoto)
-      const img = new Image()
-      img.src = currPhoto.fullUrl
-      store.addPhoto(currPhoto.id, {
-        photo: currPhoto,
-        preloadedUrl: img.src,
-        width,
-        height,
+    for (const target of [prevPhoto, nextPhoto]) {
+      if (!target?.fullUrl) continue
+      const { props } = getImageProps({
+        src: target.fullUrl,
+        width: target.width,
+        height: target.height,
+        sizes: '100vw',
+        alt: '',
+      })
+      preload(props.src, {
+        as: 'image',
+        imageSrcSet: props.srcSet,
+        imageSizes: props.sizes,
       })
     }
-
-    preloadPhoto(prevPhoto)
-    preloadPhoto(nextPhoto)
   }, [prevPhoto, nextPhoto])
 
   const handleClickPrev = () => {
     if (!prevPhoto) return
+    lastDirectionRef.current = 'prev'
     router.push(`${path}/${prevPhoto.id}`)
   }
 
   const handleClickNext = () => {
     if (!nextPhoto) return
+    lastDirectionRef.current = 'next'
     router.push(`${path}/${nextPhoto.id}`)
   }
+
+  useEffect(() => {
+    const direction = lastDirectionRef.current
+    if (!direction) return
+    const target =
+      direction === 'prev' ? prevBtnRef.current : nextBtnRef.current
+    target?.focus()
+    lastDirectionRef.current = null
+  }, [photoID])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      const target = e.target as HTMLElement | null
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return
+      }
+      if (e.key === 'ArrowLeft') handleClickPrev()
+      else handleClickNext()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [prevPhoto, nextPhoto])
 
   return (
     <div className={styles.SinglePhoto}>
       <div className={styles.content}>
         <div className={styles.inner} id='photoContainer'>
-          <PhotoLoader
-            showLoader={showLoader}
-            timeoutMessage={timeoutMessage}
-          />
-          {displayedPhoto && (
-            <PhotoImage photo={displayedPhoto} isLoading={isLoading} />
-          )}
+          <PhotoLoader showLoader={showLoader} error={error} />
+          {photo && <PhotoImage photo={photo} />}
           <button
             onClick={handleClickPrev}
             className={styles.prev_btn}
-            aria-label='Previous photo'
+            aria-hidden='true'
+            tabIndex={-1}
           ></button>
           <button
             onClick={handleClickNext}
             className={styles.next_btn}
-            aria-label='Next photo'
+            aria-hidden='true'
+            tabIndex={-1}
           ></button>
         </div>
 
@@ -137,9 +125,11 @@ const PhotoViewerPage = ({ params, filter, path }: PageProps) => {
           handleClickPrev={handleClickPrev}
           handleClickNext={handleClickNext}
           path={path}
+          prevBtnRef={prevBtnRef}
+          nextBtnRef={nextBtnRef}
         />
 
-        <InfoDisplay photoInfo={displayedPhoto} />
+        <InfoDisplay photoInfo={photo} />
       </div>
     </div>
   )

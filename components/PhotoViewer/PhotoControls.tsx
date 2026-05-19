@@ -8,23 +8,35 @@ interface PhotoControlsProps {
   handleClickPrev: () => void
   handleClickNext: () => void
   path: string
+  prevBtnRef?: React.Ref<HTMLButtonElement>
+  nextBtnRef?: React.Ref<HTMLButtonElement>
 }
 
 const PhotoControls = ({
   handleClickPrev,
   handleClickNext,
   path,
+  prevBtnRef,
+  nextBtnRef,
 }: PhotoControlsProps) => {
   return (
     <div className={styles.footer}>
       <div className={styles.controls}>
-        <button onClick={handleClickPrev} aria-label='Previous photo'>
+        <button
+          ref={prevBtnRef}
+          onClick={handleClickPrev}
+          aria-label='Previous photo'
+        >
           <MoveLeft size={16} strokeWidth={1} />
         </button>
         <Link href={path} aria-label='Back to gallery'>
           <LayoutGrid size={16} strokeWidth={1} />
         </Link>
-        <button onClick={handleClickNext} aria-label='Next photo'>
+        <button
+          ref={nextBtnRef}
+          onClick={handleClickNext}
+          aria-label='Next photo'
+        >
           <MoveRight size={16} strokeWidth={1} />
         </button>
       </div>

@@ -7,7 +7,7 @@ const NotFoundPage = () => {
     <>
       <div className={styles.notFoundPage}>
         <h1>Page Not Found</h1>
-        <Link href='/all-photos/00176'>Home</Link>
+        <Link href='/'>Home</Link>
       </div>
     </>
   )

@@ -1,10 +1,11 @@
 'use client'
 
-import PhotoViewer from '@/components/PhotoViewer'
-import Head from 'next/head'
-import { useState, useEffect } from 'react'
-
+import dynamic from 'next/dynamic'
 import { useParams } from 'next/navigation'
+
+const PhotoViewer = dynamic(() => import('@/components/PhotoViewer'), {
+  ssr: false,
+})
 
 const SinglePhoto = () => {
   const params = useParams<{ photoID: string }>()

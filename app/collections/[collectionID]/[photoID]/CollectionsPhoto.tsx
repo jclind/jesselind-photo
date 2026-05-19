@@ -1,9 +1,12 @@
 'use client'
 
-import PhotoViewer from '@/components/PhotoViewer'
+import dynamic from 'next/dynamic'
 import { PhotoViewerFilterType } from '@/types/Photo'
-import Head from 'next/head'
 import { useParams } from 'next/navigation'
+
+const PhotoViewer = dynamic(() => import('@/components/PhotoViewer'), {
+  ssr: false,
+})
 
 const CollectionsPhotoPage = () => {
   const { collectionID, photoID } = useParams<{
@@ -11,19 +14,12 @@ const CollectionsPhotoPage = () => {
     photoID: string
   }>()
   const filteredParams = { photoID }
-  const path = `/collections/${collectionID}` // Define the path for navigation
+  const path = `/collections/${collectionID}`
   const filter: PhotoViewerFilterType = {
     field: 'category',
     value: collectionID,
-  } // Example filter, adjust as needed
-  return (
-    <>
-      <Head>
-        <title>{`${photoID} | Jesse Lind Photography`}</title>
-      </Head>
-      <PhotoViewer params={filteredParams} path={path} filter={filter} />
-    </>
-  )
+  }
+  return <PhotoViewer params={filteredParams} path={path} filter={filter} />
 }
 
 export default CollectionsPhotoPage
