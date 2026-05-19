@@ -1,5 +1,3 @@
-@use 'fonts';
-
 // =============================================
 // Colors
 // =============================================
@@ -20,7 +18,7 @@ $secondary-border-color: #575757; // Secondary border color
 // =============================================
 // Typography
 // =============================================
-$font-family-base: 'Nohemi', system-ui, sans-serif; // Base font family
+$font-family-base: var(--font-nohemi), system-ui, sans-serif; // Base font family
 $font-size-base: 16px; // Base font size
 $line-height-base: 1.5; // Base line height
 

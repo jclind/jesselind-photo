@@ -10,6 +10,5 @@ export const getPhotoWidthFromHeight = (
 ): number => {
   if (!photo || !height) return 0
   const aspectRatio = getAspectRatioFromPhoto(photo)
-  console.log('photo', photo)
   return height * aspectRatio
 }

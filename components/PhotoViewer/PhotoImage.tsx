@@ -1,29 +1,54 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import Image from 'next/image'
 import styles from './PhotoViewer.module.scss'
 import { Photo } from '@/types/Photo'
+import { getPhotoAlt } from '@/util/getPhotoAlt'
 
 interface PhotoImageProps {
   photo: Photo
-  isLoading: boolean
 }
 
-const PhotoImage = ({ photo, isLoading }: PhotoImageProps) => {
+// generateBlurPlaceholder always returns `data:image/jpeg;base64,<base64>`.
+// Anything else in this field is a forged doc — drop it before it reaches the
+// CSS url() string and can break out of the quoted context.
+const VALID_BLUR = /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/
+
+const PhotoImage = ({ photo }: PhotoImageProps) => {
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     setLoaded(false)
-    if (!photo.fullUrl) return
-    const img: HTMLImageElement = new Image()
-    img.src = photo.fullUrl
-    img.onload = () => setLoaded(true)
-  }, [photo])
+  }, [photo.id])
+
+  if (!photo.fullUrl) return null
+
+  const safeBlur =
+    photo.blurDataURL && VALID_BLUR.test(photo.blurDataURL)
+      ? photo.blurDataURL
+      : null
+
   return (
-    <img
-      src={photo.fullUrl}
-      alt={photo.title || 'Photo'}
-      draggable={false}
-      className={`${styles.photo} ${loaded ? styles.loaded : ''}`}
-    />
+    <div
+      className={styles.photoFrame}
+      style={{
+        aspectRatio: `${photo.width} / ${photo.height}`,
+        ...(safeBlur && {
+          backgroundImage: `url("${safeBlur}")`,
+        }),
+      }}
+    >
+      <Image
+        src={photo.fullUrl}
+        alt={getPhotoAlt(photo)}
+        width={photo.width}
+        height={photo.height}
+        draggable={false}
+        priority
+        sizes='100vw'
+        onLoad={() => setLoaded(true)}
+        className={`${styles.photo} ${loaded ? styles.loaded : ''}`}
+      />
+    </div>
   )
 }
 

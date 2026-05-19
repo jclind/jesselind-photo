@@ -45,5 +45,40 @@
         display: none;
       }
     }
+
+    label[for] {
+      font-size: $fs-xs;
+      color: $secondary-text;
+    }
+
+    .fieldError {
+      color: #b00020;
+      font-size: $fs-xs;
+      min-height: 0;
+
+      &:empty {
+        display: none;
+      }
+    }
+
+    .formError {
+      color: #b00020;
+      font-size: $fs-xs;
+      text-align: center;
+
+      &:empty {
+        display: none;
+      }
+    }
+
+    .formSuccess {
+      color: $secondary-text;
+      font-size: $fs-xs;
+      text-align: center;
+
+      &:empty {
+        display: none;
+      }
+    }
   }
 }

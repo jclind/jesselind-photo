@@ -3,21 +3,19 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import styles from './GalleryTemplate.module.scss'
 import { LayoutGrid, PanelsTopLeft } from 'lucide-react'
+import type { QueryDocumentSnapshot } from 'firebase/firestore/lite'
 import PhotoThumbnail from './PhotoThumbnail'
 import PhotoRows from './PhotoRows'
 import { Photo } from '@/types/Photo'
 
 type GalleryProps = {
   fetchPhotos: (
-    lastDoc?: any
-  ) => Promise<{ photos: Photo[]; lastDoc: any | null }>
+    lastDoc?: QueryDocumentSnapshot
+  ) => Promise<{ photos: Photo[]; lastDoc: QueryDocumentSnapshot | null }>
   pageSize?: number
   imagePath: string
   topGapSmall?: boolean
-}
-
-export const storeImageInSession = (photo: Photo) => {
-  sessionStorage.setItem('selectedPhoto', JSON.stringify(photo))
+  title?: string
 }
 
 const GalleryTemplate = ({
@@ -25,21 +23,34 @@ const GalleryTemplate = ({
   pageSize = 10,
   imagePath,
   topGapSmall,
+  title,
 }: GalleryProps) => {
   const [photos, setPhotos] = useState<Photo[]>([])
-  const [lastDoc, setLastDoc] = useState<any | null>(null)
+  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const [loading, setLoading] = useState(false)
   const [isThumbnailMode, setIsThumbnailMode] = useState(true)
+  const [liveMessage, setLiveMessage] = useState('')
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return
     setLoading(true)
     try {
       const { photos: newPhotos, lastDoc: newLastDoc } = await fetchPhotos(
-        lastDoc
+        lastDoc ?? undefined
       )
-      setPhotos(prev => [...prev, ...newPhotos])
+      setPhotos(prev => {
+        const next = [...prev, ...newPhotos]
+        if (newPhotos.length > 0) {
+          setLiveMessage(
+            `Loaded ${newPhotos.length} more photo${
+              newPhotos.length === 1 ? '' : 's'
+            }. Total ${next.length}.`
+          )
+        }
+        return next
+      })
       setLastDoc(newLastDoc)
       if (!newLastDoc) setHasMore(false)
     } finally {
@@ -51,20 +62,22 @@ const GalleryTemplate = ({
     loadMore()
   }, [])
 
-  // infinite scroll
+  // infinite scroll via IntersectionObserver on a sentinel below the grid
   useEffect(() => {
-    const onScroll = () => {
-      if (
-        window.innerHeight + window.scrollY >=
-          document.documentElement.scrollHeight - 1000 &&
-        !loading &&
-        hasMore
-      ) {
-        loadMore()
-      }
-    }
-    window.addEventListener('scroll', onScroll)
-    return () => window.removeEventListener('scroll', onScroll)
+    if (!hasMore) return
+    const node = sentinelRef.current
+    if (!node) return
+
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0]?.isIntersecting && !loading && hasMore) {
+          loadMore()
+        }
+      },
+      { rootMargin: '1000px 0px' }
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
   }, [loadMore, loading, hasMore])
 
   const handleModeToggle = () => {
@@ -86,29 +99,38 @@ const GalleryTemplate = ({
         className={styles.toggle_mode_btn}
         onClick={handleModeToggle}
         aria-label='Toggle view mode'
+        aria-pressed={isThumbnailMode}
       >
         {isThumbnailMode ? <LayoutGrid /> : <PanelsTopLeft />}
       </button>
+      {title && <h1 className={styles.title}>{title}</h1>}
       <div
         className={`${styles.content} ${topGapSmall ? styles.topGapSmall : ''}`}
       >
-        <div className={styles.grid}>
-          {isThumbnailMode ? (
-            photos.map((photo: Photo) => (
-              <PhotoThumbnail
-                key={photo.id}
-                photo={photo}
-                isThumbnailMode={isThumbnailMode}
-                createFullImagePath={createFullImagePath}
-              />
-            ))
-          ) : (
+        {isThumbnailMode ? (
+          <ul role='list' className={styles.grid}>
+            {photos.map((photo: Photo) => (
+              <li key={photo.id}>
+                <PhotoThumbnail
+                  photo={photo}
+                  isThumbnailMode={isThumbnailMode}
+                  createFullImagePath={createFullImagePath}
+                />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className={styles.grid}>
             <PhotoRows
               photos={photos}
               createFullImagePath={createFullImagePath}
             />
-          )}
+          </div>
+        )}
+        <div role='status' aria-live='polite' className='visually-hidden'>
+          {liveMessage}
         </div>
+        {hasMore && <div ref={sentinelRef} aria-hidden />}
       </div>
     </div>
   )

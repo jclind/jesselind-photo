@@ -92,11 +92,13 @@
       @media (min-width: $breakpoint-lg) {
         // Modern browsers: Use :has() selector (Chrome 105+, Firefox 121+, Safari 15.4+)
         @supports selector(:has(*)) {
-          &:has(.name:hover) a {
+          &:has(.name:hover) a,
+          &:has(a:focus-visible) a {
             opacity: 0.4;
           }
 
-          a:has(.name:hover) {
+          a:has(.name:hover),
+          a:focus-visible {
             opacity: 1 !important;
           }
         }
@@ -115,7 +117,8 @@
         }
         // Modern browsers
         @supports selector(:has(*)) {
-          a:has(.name:hover) {
+          a:has(.name:hover),
+          a:focus-visible {
             font-weight: 300;
 
             .imageContainer {
@@ -196,7 +199,8 @@
 
         // Modern browsers
         @supports selector(:has(*)) {
-          a:has(.name:hover) {
+          a:has(.name:hover),
+          a:focus-visible {
             font-weight: 400;
           }
         }

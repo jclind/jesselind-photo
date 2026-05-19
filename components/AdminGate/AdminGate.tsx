@@ -1,64 +1,104 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+  type User,
+} from 'firebase/auth'
+import { auth } from '@/lib/firebase'
 import styles from './AdminGate.module.scss'
 
-const EXPIRY_MS = 60 * 60 * 1000 // 1 hour
+type AuthStatus = 'loading' | 'unauthenticated' | 'unauthorized' | 'authorized'
 
 export const logout = () => {
-  localStorage.removeItem('adminAuth')
-  window.location.reload()
+  signOut(auth)
 }
 
 const AdminGate = ({ children }: { children: React.ReactNode }) => {
-  const [authenticated, setAuthenticated] = useState(false)
+  const [status, setStatus] = useState<AuthStatus>('loading')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    const authData = localStorage.getItem('adminAuth')
-    if (authData) {
-      const { expiry } = JSON.parse(authData)
-      if (Date.now() < expiry) {
-        setAuthenticated(true)
-      } else {
-        localStorage.removeItem('adminAuth') // expired
+    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
+      if (!user) {
+        setStatus('unauthenticated')
+        return
       }
-    }
+      // Force-refresh so a freshly-granted custom claim is visible without
+      // requiring the user to sign out and back in.
+      const token = await user.getIdTokenResult(true)
+      setStatus(token.claims.admin === true ? 'authorized' : 'unauthorized')
+    })
+    return unsubscribe
   }, [])
 
-  const handleLogin = () => {
-    if (password === process.env.NEXT_PUBLIC_ADMIN_PASS) {
-      const expiry = Date.now() + EXPIRY_MS
-      localStorage.setItem('adminAuth', JSON.stringify({ expiry }))
-      setAuthenticated(true)
-    } else {
-      alert('Wrong password ❌')
+  const handleLogin = async () => {
+    setError(null)
+    setSubmitting(true)
+    try {
+      await signInWithEmailAndPassword(auth, email, password)
+    } catch {
+      setError('Login failed')
+    } finally {
+      setSubmitting(false)
     }
   }
 
-  if (!authenticated) {
-    return (
-      <div className={styles.adminGate}>
-        <div className={styles.loginBox}>
-          <h1>Admin Login</h1>
-          <input
-            type='password'
-            placeholder='enter password'
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter') {
-                handleLogin()
-              }
-            }}
-          />
-          {password.length > 0 && <button onClick={handleLogin}>Login</button>}
+  if (status === 'loading') return null
+
+  if (status === 'authorized') return <>{children}</>
+
+  const canSubmit = email.length > 0 && password.length > 0 && !submitting
+
+  return (
+    <div className={styles.adminGate}>
+      <div className={styles.loginBox}>
+        <h1>Admin Login</h1>
+        <label htmlFor='admin-email' className='visually-hidden'>
+          Email
+        </label>
+        <input
+          id='admin-email'
+          type='email'
+          placeholder='email'
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          autoComplete='email'
+        />
+        <label htmlFor='admin-password' className='visually-hidden'>
+          Password
+        </label>
+        <input
+          id='admin-password'
+          type='password'
+          placeholder='password'
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          autoComplete='current-password'
+          onKeyDown={e => {
+            if (e.key === 'Enter' && canSubmit) handleLogin()
+          }}
+        />
+        <button onClick={handleLogin} disabled={!canSubmit}>
+          {submitting ? 'Logging in…' : 'Login'}
+        </button>
+        <div role='alert' aria-live='polite'>
+          {error && <p>{error}</p>}
+          {status === 'unauthorized' && (
+            <p>
+              This account is not authorized.{' '}
+              <button onClick={logout}>Sign out</button>
+            </p>
+          )}
         </div>
       </div>
-    )
-  }
-
-  return <>{children}</>
+    </div>
+  )
 }
 
 export default AdminGate

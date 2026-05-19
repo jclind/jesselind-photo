@@ -1,11 +1,87 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { db } from '@/lib/firebase'
-import { collection, getDocs, query, orderBy, where } from 'firebase/firestore'
-import { Photo } from '@/types/Photo'
+import {
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  where,
+  limit,
+  type QueryConstraint,
+} from 'firebase/firestore/lite'
+import { Photo, PhotoLoadError, PhotoViewerFilterType } from '@/types/Photo'
+import { usePhotoStore } from '@/store/photoStore'
 
 interface UsePhotoCollectionProps {
   initialPhotoID: string
-  filter?: { field: string; value: any } // optional for collection/project
+  filter?: PhotoViewerFilterType
+}
+
+const photosRef = collection(db, 'photos')
+
+const filterClause = (filter?: PhotoViewerFilterType): QueryConstraint[] =>
+  filter ? [where(filter.field, '==', filter.value)] : []
+
+const fetchOne = async (
+  photoID: string,
+  filter?: PhotoViewerFilterType
+): Promise<Photo | null> => {
+  const snap = await getDocs(
+    query(photosRef, where('id', '==', photoID), ...filterClause(filter), limit(1))
+  )
+  return snap.empty ? null : (snap.docs[0].data() as Photo)
+}
+
+// Sequence numbers are dense and monotonic per `reSerializePhotos`, so the
+// immediate neighbor of seq=K is seq=K±1 when one exists in scope. If that
+// neighbor is already in the in-memory cache (matching the active filter when
+// present), it's authoritatively the answer — skip the Firestore round-trip.
+const findNeighborInCache = (
+  sequenceNumber: number,
+  direction: 'prev' | 'next',
+  filter?: PhotoViewerFilterType
+): Photo | null => {
+  const targetSeq =
+    direction === 'next' ? sequenceNumber + 1 : sequenceNumber - 1
+  const cache = usePhotoStore.getState().cache
+  for (const id in cache) {
+    const photo = cache[id]
+    if (photo.sequenceNumber !== targetSeq) continue
+    if (filter && photo[filter.field] !== filter.value) continue
+    return photo
+  }
+  return null
+}
+
+const fetchNeighbor = async (
+  sequenceNumber: number,
+  direction: 'prev' | 'next',
+  filter?: PhotoViewerFilterType
+): Promise<Photo | null> => {
+  const cached = findNeighborInCache(sequenceNumber, direction, filter)
+  if (cached) return cached
+
+  const op = direction === 'next' ? '>' : '<'
+  const dir: 'asc' | 'desc' = direction === 'next' ? 'asc' : 'desc'
+  const constraints: QueryConstraint[] = [
+    ...filterClause(filter),
+    where('sequenceNumber', op, sequenceNumber),
+    orderBy('sequenceNumber', dir),
+    limit(1),
+  ]
+  const snap = await getDocs(query(photosRef, ...constraints))
+  if (!snap.empty) return snap.docs[0].data() as Photo
+
+  // wrap-around: first when going next, last when going prev
+  const wrapSnap = await getDocs(
+    query(
+      photosRef,
+      ...filterClause(filter),
+      orderBy('sequenceNumber', dir),
+      limit(1)
+    )
+  )
+  return wrapSnap.empty ? null : (wrapSnap.docs[0].data() as Photo)
 }
 
 export function usePhotoCollection({
@@ -15,58 +91,82 @@ export function usePhotoCollection({
   const [photo, setPhoto] = useState<Photo | null>(null)
   const [prevPhoto, setPrevPhoto] = useState<Photo | null>(null)
   const [nextPhoto, setNextPhoto] = useState<Photo | null>(null)
-  const [timeoutMessage, setTimeoutMessage] = useState('')
-  const [collectionLoading, setCollectionLoading] = useState(true)
+  const [photoLoading, setPhotoLoading] = useState(true)
+  const [neighborsLoading, setNeighborsLoading] = useState(true)
+  const [error, setError] = useState<PhotoLoadError | null>(null)
 
   useEffect(() => {
-    const fetchPhotos = async () => {
-      try {
-        let q = query(
-          collection(db, 'photos'),
-          orderBy('sequenceNumber', 'asc')
-        )
-        if (filter) {
-          q = query(
-            collection(db, 'photos'),
-            where(filter.field, '==', filter.value),
-            orderBy('sequenceNumber', 'asc')
-          )
-        }
+    let cancelled = false
+    setError(null)
+    setPhoto(null)
+    setPrevPhoto(null)
+    setNextPhoto(null)
+    setPhotoLoading(true)
+    setNeighborsLoading(true)
 
-        const snapshot = await getDocs(q)
-        const allPhotos = snapshot.docs.map(doc => doc.data() as Photo)
+    const load = async () => {
+      const store = usePhotoStore.getState()
 
-        if (!allPhotos.length) {
-          setTimeoutMessage('No photos found.')
+      // 1. Current photo — cache hit, else fetch. The cache is shared across
+      // filter scopes, so a cached photo for this id only counts as a hit when
+      // it also matches the active filter; otherwise fall through to fetchOne
+      // (which enforces the filter and returns null on mismatch).
+      const cached = store.cache[initialPhotoID]
+      let current: Photo | null =
+        cached && (!filter || cached[filter.field] === filter.value)
+          ? cached
+          : null
+
+      if (current) {
+        setPhoto(current)
+        setPhotoLoading(false)
+      } else {
+        try {
+          current = await fetchOne(initialPhotoID, filter)
+        } catch (err) {
+          if (cancelled) return
+          console.error(err)
+          setError('fetch-failed')
+          setPhotoLoading(false)
+          setNeighborsLoading(false)
           return
         }
-
-        const currentIndex = allPhotos.findIndex(p => p.id === initialPhotoID)
-        if (currentIndex === -1) {
-          setTimeoutMessage('Photo not found.')
+        if (cancelled) return
+        if (!current) {
+          setError('not-found')
+          setPhotoLoading(false)
+          setNeighborsLoading(false)
           return
         }
-
-        // Current, prev, next photos
-        setPhoto(allPhotos[currentIndex])
-
-        const prevIndex =
-          currentIndex === 0 ? allPhotos.length - 1 : currentIndex - 1
-        const nextIndex =
-          currentIndex === allPhotos.length - 1 ? 0 : currentIndex + 1
-
-        setPrevPhoto(allPhotos[prevIndex])
-        setNextPhoto(allPhotos[nextIndex])
-      } catch (err) {
-        console.error(err)
-        setTimeoutMessage('Error loading photos.')
-      } finally {
-        setCollectionLoading(false)
+        setPhoto(current)
+        setPhotoLoading(false)
+        store.addPhoto(current)
       }
+
+      // 2. Neighbors in parallel — best-effort; failures don't block the viewer
+      const results = await Promise.allSettled([
+        fetchNeighbor(current.sequenceNumber, 'prev', filter),
+        fetchNeighbor(current.sequenceNumber, 'next', filter),
+      ])
+      if (cancelled) return
+      const [prevRes, nextRes] = results
+      if (prevRes.status === 'fulfilled' && prevRes.value) {
+        setPrevPhoto(prevRes.value)
+        store.addPhoto(prevRes.value)
+      }
+      if (nextRes.status === 'fulfilled' && nextRes.value) {
+        setNextPhoto(nextRes.value)
+        store.addPhoto(nextRes.value)
+      }
+      setNeighborsLoading(false)
     }
 
-    fetchPhotos()
-  }, [initialPhotoID, filter])
+    load()
 
-  return { photo, prevPhoto, nextPhoto, timeoutMessage, collectionLoading }
+    return () => {
+      cancelled = true
+    }
+  }, [initialPhotoID, filter?.field, filter?.value])
+
+  return { photo, prevPhoto, nextPhoto, photoLoading, neighborsLoading, error }
 }

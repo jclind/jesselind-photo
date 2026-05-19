@@ -9,12 +9,10 @@ import {
   limit,
   getDocs,
   type QueryDocumentSnapshot,
-  type DocumentData,
-} from 'firebase/firestore'
+} from 'firebase/firestore/lite'
 import { db } from '@/lib/firebase'
 import { Photo } from '@/types/Photo'
 import GalleryTemplate from '@/components/GalleryTemplate'
-import Head from 'next/head'
 
 const PAGE_SIZE = 20
 
@@ -50,6 +48,7 @@ const Gallery = () => {
       fetchPhotos={fetchPhotos}
       pageSize={PAGE_SIZE}
       imagePath={imagePath}
+      title='All Photos'
     />
   )
 }

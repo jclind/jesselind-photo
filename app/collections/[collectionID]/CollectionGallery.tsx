@@ -10,7 +10,7 @@ import {
   getDocs,
   where,
   type QueryDocumentSnapshot,
-} from 'firebase/firestore'
+} from 'firebase/firestore/lite'
 import { db } from '@/lib/firebase'
 import { Photo } from '@/types/Photo'
 import GalleryTemplate from '@/components/GalleryTemplate'
@@ -50,7 +50,6 @@ const CollectionGallery = () => {
     const snapshot = await getDocs(q)
 
     if (snapshot.empty) {
-      console.log('FetchPhotos 3: its empty?')
       return { photos: [], lastDoc: null }
     }
 
@@ -64,6 +63,7 @@ const CollectionGallery = () => {
       fetchPhotos={fetchPhotos}
       pageSize={PAGE_SIZE}
       imagePath={imagePath}
+      title={category.name}
     />
   )
 }

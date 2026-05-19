@@ -3,6 +3,22 @@
 .Gallery {
   width: 100%;
 
+  .title {
+    margin: 34px 150px 0;
+    height: 22.5px;
+    font-size: $fs-large;
+    font-weight: 200;
+    text-transform: capitalize;
+
+    @media (max-width: $breakpoint-lg) {
+      margin-left: 0;
+      margin-right: 0;
+      padding-left: 40%;
+      padding-right: 24px;
+      font-size: $fs-regular;
+    }
+  }
+
   .toggle_mode_btn {
     position: fixed;
     bottom: 24px;
@@ -51,6 +67,13 @@
     }
     .grid {
       width: 100%;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      // li wrappers are SR-only; let the .card link itself be the grid item
+      > li {
+        display: contents;
+      }
       .card {
         width: 100%;
       }
@@ -95,14 +118,11 @@
         height: 140px;
         // overflow: hidden;
 
-        h1 {
+        span {
           position: absolute;
           bottom: -24px;
           // left: 0;
           font-size: 10px;
-        }
-
-        img {
         }
 
         .fullImage {
@@ -155,11 +175,5 @@
   .grid {
     display: flex;
     flex-wrap: wrap;
-  }
-
-  .card {
-  }
-
-  .card img {
   }
 }

@@ -2,7 +2,7 @@
 
 import React from 'react'
 import styles from './page.module.scss'
-import { projects, ProjectType } from '@/data/projects'
+import { ProjectType } from '@/data/projects'
 import GalleryTemplate from '@/components/GalleryTemplate'
 import { db } from '@/lib/firebase'
 import { Photo } from '@/types/Photo'
@@ -15,7 +15,7 @@ import {
   startAfter,
   limit,
   getDocs,
-} from 'firebase/firestore'
+} from 'firebase/firestore/lite'
 
 type ProjectGalleryProps = {
   currProject: ProjectType
@@ -51,7 +51,6 @@ const ProjectGallery = ({ currProject }: ProjectGalleryProps) => {
     const snapshot = await getDocs(q)
 
     if (snapshot.empty) {
-      console.log('FetchPhotos 3: its empty?')
       return { photos: [], lastDoc: null }
     }
 

@@ -3,10 +3,11 @@
 import React, { useEffect, useState } from 'react'
 
 import styles from './GalleryTemplate.module.scss'
-import { storeImageInSession } from './GalleryTemplate'
 import { Photo, PhotoRowsType } from '@/types/Photo'
 import Link from 'next/link'
+import Image from 'next/image'
 import { getAspectRatioFromPhoto } from '@/util/photoDimentionFns'
+import { getPhotoAlt } from '@/util/getPhotoAlt'
 
 const PhotoRows = ({
   photos,
@@ -26,9 +27,7 @@ const PhotoRows = ({
 
       const photoRows: { rowPhotos: Photo[]; height: number }[] = []
       let currRowIndex = 0
-      console.log('pageHeight', pageHeight)
-      console.log('MAX_ROW_HEIGHT', MAX_ROW_HEIGHT)
-      originalPhotos.map((photo, index, origArr) => {
+      originalPhotos.forEach(photo => {
         const currR = getAspectRatioFromPhoto(photo)
         const pageW = window.innerWidth
         let rowHeight = 0
@@ -84,17 +83,23 @@ const PhotoRows = ({
               return (
                 <Link
                   href={createFullImagePath(photo)}
-                  onClick={() => storeImageInSession(photo)}
-                  data-astro-prefetch='hover'
                   key={photo.id}
                   onMouseEnter={() => {
                     if (photo.fullUrl) {
-                      const img = new Image()
+                      const img = new window.Image()
                       img.src = photo.fullUrl
                     }
                   }}
                 >
-                  <img src={photo.fullUrl} height={h} width={w} />
+                  {photo.fullUrl && (
+                    <Image
+                      src={photo.fullUrl}
+                      alt={getPhotoAlt(photo)}
+                      width={Math.round(w)}
+                      height={Math.round(h)}
+                      sizes='(max-width: 768px) 100vw, 60vw'
+                    />
+                  )}
                 </Link>
               )
             })}
