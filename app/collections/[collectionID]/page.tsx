@@ -3,6 +3,7 @@ import CollectionGallery from './CollectionGallery'
 import { categories } from '@/data/categories'
 import JsonLd from '@/components/JsonLd'
 import { buildCollectionPageLd } from '@/lib/jsonLd'
+import BackButton from '@/components/BackButton'
 
 const titleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase())
 
@@ -67,6 +68,11 @@ const CollectionPage = async ({
   return (
     <>
       {category && <JsonLd data={buildCollectionPageLd(category)} />}
+      <BackButton
+        href='/collections'
+        label='Collections'
+        current={category ? titleCase(category.name) : collectionID}
+      />
       <CollectionGallery />
     </>
   )

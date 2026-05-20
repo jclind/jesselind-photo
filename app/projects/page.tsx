@@ -3,6 +3,7 @@ import styles from './page.module.scss'
 import { projects } from '@/data/projects'
 import Link from 'next/link'
 import Image from 'next/image'
+import BackButton from '@/components/BackButton'
 
 export const metadata = {
   title: 'Projects | Jesse Lind Photography',
@@ -12,7 +13,7 @@ const ProjectsPage = () => {
   return (
     <div className={styles.projects}>
       <div className={styles.content}>
-        <h1>Projects</h1>
+        <BackButton current='Projects' />
         <div className={styles.projectsList}>
           {projects.map((project, index) => (
             <div className={styles.projectWrapper} key={project.id}>

@@ -5,6 +5,7 @@ import styles from './page.module.scss'
 import ProjectGallery from './ProjectGallery'
 import JsonLd from '@/components/JsonLd'
 import { buildImageGalleryLd } from '@/lib/jsonLd'
+import BackButton from '@/components/BackButton'
 
 export const generateStaticParams = async () => {
   return projects.map(p => ({ projectID: p.id }))
@@ -65,6 +66,12 @@ const ProjectPage = async ({ params }: PageProps) => {
   return (
     <div className={styles.projectPage}>
       <JsonLd data={buildImageGalleryLd(currProject)} />
+      <BackButton
+        href='/projects'
+        label='Projects'
+        current={currProject.name}
+        currentAsHeading={false}
+      />
       <div className={styles.header}>
         <div className={styles.imageContainer}>
           <Image

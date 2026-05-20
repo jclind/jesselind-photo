@@ -3,6 +3,7 @@ import Image from 'next/image'
 import styles from './page.module.scss'
 import { categories } from '@/data/categories'
 import HoverInteractivity from './HoverInteractivity'
+import BackButton from '@/components/BackButton'
 
 export const metadata = {
   title: 'Collections | Jesse Lind Photography',
@@ -13,9 +14,7 @@ const Collections = () => {
   return (
     <div className={styles.collection}>
       <div className={styles.content}>
-        <Link href='/all-photos' className={styles.myPhotosLink}>
-          My Photos
-        </Link>
+        <BackButton current='Collections' />
 
         <div className={styles.links}>
           {categories.filter(c => !c.hidden).map((category, index) => (

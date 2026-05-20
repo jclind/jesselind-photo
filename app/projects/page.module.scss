@@ -7,12 +7,6 @@
     margin: 34px 150px;
     height: 100%;
 
-    h1 {
-      margin-top: 15px;
-      height: 22.5px; //!update to $myPhotosLinkHeight;
-      font-size: $fs-large;
-      font-weight: 200;
-    }
     .leftNumbers {
       display: none;
     }
@@ -22,9 +16,6 @@
       padding-left: 40%;
       padding-right: 24px;
 
-      h1 {
-        font-size: $fs-regular;
-      }
       .leftNumbers {
         display: flex;
         align-items: flex-end;
@@ -51,8 +42,13 @@
         gap: $gap-xl;
       }
       .projectCard {
+        // Block-level so width/max-width actually apply — as an inline <a>
+        // those properties are ignored and the click area extends to the
+        // block-level imageContainer, which takes the full grid cell.
+        display: block;
         max-width: 700px;
         width: 100%;
+        margin: 0 auto;
         filter: brightness(1);
         transition: filter 0.5s ease-in-out;
         .imageContainer {
