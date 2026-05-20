@@ -1,5 +1,6 @@
 import React from 'react'
 import Gallery from './Gallery'
+import BackButton from '@/components/BackButton'
 
 export const metadata = {
   title: 'All Photos | Jesse Lind Photography',
@@ -7,7 +8,12 @@ export const metadata = {
 }
 
 const AllPhotosPage = () => {
-  return <Gallery />
+  return (
+    <>
+      <BackButton current='All Photos' />
+      <Gallery />
+    </>
+  )
 }
 
 export default AllPhotosPage
