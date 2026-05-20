@@ -1,5 +1,38 @@
 @use '@/styles/vars' as *;
 
+// Shared crumb-link styling used in both breadcrumb and single-crumb modes.
+.crumbLink {
+  color: $secondary-text;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -3px;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s ease;
+  }
+
+  &:hover {
+    color: $primary-text;
+    // Beat the global a:hover { text-decoration: underline } from globals.scss
+    // so the only underline visible is our animated ::after hairline.
+    text-decoration: none;
+    &::after {
+      transform: scaleX(1);
+    }
+  }
+}
+
+// Wrapper for both multi-crumb (nav) and single-crumb (page heading) modes.
+// Fixed at the top, aligned with the logo and hamburger.
 .breadcrumb {
   position: fixed;
   top: 24px;
@@ -17,39 +50,12 @@
   text-transform: uppercase;
   white-space: nowrap;
 
-  .crumbLink {
-    color: $secondary-text;
-    text-decoration: none;
-    transition: color 0.2s ease;
-    position: relative;
-
-    &::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: -3px;
-      height: 1px;
-      background: currentColor;
-      transform: scaleX(0);
-      transform-origin: left;
-      transition: transform 0.25s ease;
-    }
-
-    &:hover {
-      color: $primary-text;
-      &::after {
-        transform: scaleX(1);
-      }
-    }
-  }
-
   .separator {
     color: $border-color;
   }
 
   .currentHeading {
-    // Strip browser defaults so the h1 reads as the last crumb visually.
+    // Strip browser h1 defaults so it reads as a crumb visually.
     font: inherit;
     letter-spacing: inherit;
     text-transform: inherit;
@@ -59,9 +65,6 @@
   }
 
   @media (max-width: $breakpoint-md) {
-    // On small screens the logo (60px) + hamburger (30px) eat into the
-    // center band; let the breadcrumb shrink with an ellipsis rather than
-    // wrap or collide.
     max-width: calc(100vw - 180px);
     overflow: hidden;
     text-overflow: ellipsis;

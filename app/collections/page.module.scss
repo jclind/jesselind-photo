@@ -13,32 +13,11 @@
       margin-right: 0;
       padding-left: 40%;
       padding-right: 24px;
-
-      .myPhotosLink {
-        font-size: $fs-regular;
-      }
     }
 
     @media (max-width: $breakpoint-sm) {
       padding-right: 8px;
     }
-
-    a {
-      font-size: $fs-large;
-
-      &:hover {
-        text-decoration: none;
-      }
-    }
-
-    $myPhotosLinkHeight: 22.5px;
-
-    .myPhotosLink {
-      margin-top: 15px;
-      height: $myPhotosLinkHeight;
-    }
-
-    // Replace your .links styles with this updated version
 
     .links {
       display: flex;
@@ -48,12 +27,17 @@
       padding-top: $gap-2xl;
 
       a {
+        font-size: $fs-large;
         height: 40px;
         text-align: start;
         vertical-align: top;
         min-width: 40px;
         transition: opacity 0.2s ease;
         text-transform: capitalize;
+
+        &:hover {
+          text-decoration: none;
+        }
 
         .leftNumbers {
           display: none;
