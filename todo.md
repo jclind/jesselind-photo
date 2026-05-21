@@ -10,3 +10,4 @@
 - [ ] update firestore rules
 - [ ] add `.spinner` and `.errorMessage` styles to `components/PhotoViewer/PhotoViewer.module.scss` — currently referenced by `PhotoLoader.tsx` but undefined, so the "Loading..." / "Photo not found." fallbacks render unstyled
 - [ ] add catch for when home screen doesn't load correctly (is stuck in 0/9)
+- [ ] gallery images have greater clickable areas than what the image shows

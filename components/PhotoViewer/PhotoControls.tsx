@@ -29,7 +29,7 @@ const PhotoControls = ({
         >
           <MoveLeft size={16} strokeWidth={1} />
         </button>
-        <Link href={path} aria-label='Back to gallery'>
+        <Link href={path} aria-label='Back to gallery' scroll={false}>
           <LayoutGrid size={16} strokeWidth={1} />
         </Link>
         <button
