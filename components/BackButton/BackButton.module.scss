@@ -1,0 +1,72 @@
+@use '@/styles/vars' as *;
+
+// Shared crumb-link styling used in both breadcrumb and single-crumb modes.
+.crumbLink {
+  color: $secondary-text;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -3px;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s ease;
+  }
+
+  &:hover {
+    color: $primary-text;
+    // Beat the global a:hover { text-decoration: underline } from globals.scss
+    // so the only underline visible is our animated ::after hairline.
+    text-decoration: none;
+    &::after {
+      transform: scaleX(1);
+    }
+  }
+}
+
+// Wrapper for both multi-crumb (nav) and single-crumb (page heading) modes.
+// Fixed at the top, aligned with the logo and hamburger.
+.breadcrumb {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 30px;
+  z-index: 10;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: $fs-xs;
+  font-weight: 300;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  .separator {
+    color: $border-color;
+  }
+
+  .currentHeading {
+    // Strip browser h1 defaults so it reads as a crumb visually.
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    margin: 0;
+    padding: 0;
+    display: inline;
+  }
+
+  @media (max-width: $breakpoint-md) {
+    max-width: calc(100vw - 180px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

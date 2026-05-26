@@ -3,6 +3,7 @@ import Image from 'next/image'
 import styles from './page.module.scss'
 import { categories } from '@/data/categories'
 import HoverInteractivity from './HoverInteractivity'
+import BackButton from '@/components/BackButton'
 
 export const metadata = {
   title: 'Collections | Jesse Lind Photography',
@@ -13,16 +14,13 @@ const Collections = () => {
   return (
     <div className={styles.collection}>
       <div className={styles.content}>
-        <Link href='/all-photos' className={styles.myPhotosLink}>
-          My Photos
-        </Link>
+        <BackButton current='Collections' />
 
         <div className={styles.links}>
-          {categories.map((category, index) => (
+          {categories.filter(c => !c.hidden).map((category, index) => (
             <Link
               key={category.name}
               href={category.path}
-              className={index > 3 ? styles.imgToTop : ''}
               data-category-name={category.name}
             >
               <span className={styles.leftNumbers}>{`${index < 9 ? '0' : ''}${

@@ -2,12 +2,19 @@
 
 .nav_logo {
   position: fixed;
-  top: 24px;
+  // Sit 4px higher than the hamburger / breadcrumb (which are at top: 24px)
+  // so the logo's perceived visual center — biased downward by the viewfinder
+  // rectangle below the red dot — lines up with their text-glyph baseline.
+  top: 20px;
   left: 24px;
   z-index: 10;
+  height: 30px;
+  display: flex;
+  align-items: center;
   img {
     object-fit: contain;
     width: 60px;
     height: auto;
+    display: block;
   }
 }

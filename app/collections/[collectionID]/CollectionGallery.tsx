@@ -21,7 +21,7 @@ const PAGE_SIZE = 20
 
 const CollectionGallery = () => {
   const { collectionID } = useParams<{ collectionID: string }>()
-  const category = categories.find(cat => cat.name === collectionID)
+  const category = categories.find(cat => cat.slug === collectionID)
 
   const imagePath = `/collections/${collectionID}`
 
@@ -35,14 +35,14 @@ const CollectionGallery = () => {
     const q = lastDoc
       ? query(
           photosRef,
-          where('category', '==', collectionID),
+          where('category', '==', category.slug),
           orderBy('sequenceNumber', 'desc'),
           startAfter(lastDoc),
           limit(PAGE_SIZE)
         )
       : query(
           photosRef,
-          where('category', '==', collectionID),
+          where('category', '==', category.slug),
           orderBy('sequenceNumber', 'desc'),
           limit(PAGE_SIZE)
         )
@@ -63,7 +63,6 @@ const CollectionGallery = () => {
       fetchPhotos={fetchPhotos}
       pageSize={PAGE_SIZE}
       imagePath={imagePath}
-      title={category.name}
     />
   )
 }

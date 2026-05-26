@@ -25,9 +25,7 @@ const CollectionsPhotoPage = async ({
 }) => {
   const { collectionID, photoID } = await params
   const photo = await getPhotoServer(photoID)
-  const category = categories.find(
-    c => c.path === `/collections/${collectionID}`
-  )
+  const category = categories.find(c => c.slug === collectionID)
   const breadcrumb = buildBreadcrumbLd([
     { name: 'Home', url: '/' },
     { name: 'Collections', url: '/collections' },
