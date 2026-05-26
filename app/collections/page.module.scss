@@ -112,7 +112,16 @@
 
             .line {
               height: 1px;
-              border-top: 1px dotted $border-color;
+              // Dots drawn with a gradient rather than `border: dotted`, which
+              // rasterizes as a solid line for a frame during the hover repaint.
+              background-image: radial-gradient(
+                circle,
+                $border-color 0.5px,
+                transparent 0.5px
+              );
+              background-position: left center;
+              background-size: 3px 1px;
+              background-repeat: repeat-x;
             }
           }
         }
@@ -129,7 +138,16 @@
 
             .line {
               height: 1px;
-              border-top: 1px dotted $border-color;
+              // Dots drawn with a gradient rather than `border: dotted`, which
+              // rasterizes as a solid line for a frame during the hover repaint.
+              background-image: radial-gradient(
+                circle,
+                $border-color 0.5px,
+                transparent 0.5px
+              );
+              background-position: left center;
+              background-size: 3px 1px;
+              background-repeat: repeat-x;
             }
           }
         }
