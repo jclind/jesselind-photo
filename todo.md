@@ -3,11 +3,11 @@
 # features
 
 - [ ] add number of photos in cycle in each gallery / photo page -[X] ad loading where number of loaded images are shown. (Added to home page)
-- [ ] eventually figure out how to make home page loading not be called again (or be delayed while checking for loaded images) if it has already been visited (and the images have been loaded therefore) in this session.
-- [ ] set persistent state for gallery style
+- [x] eventually figure out how to make home page loading not be called again (or be delayed while checking for loaded images) if it has already been visited (and the images have been loaded therefore) in this session.
+- [x] set persistent state for gallery style
 - [ ] recalculate gallery layout on page size update
-- [ ] Redo authentication for admin panel
-- [ ] update firestore rules
-- [ ] add `.spinner` and `.errorMessage` styles to `components/PhotoViewer/PhotoViewer.module.scss` — currently referenced by `PhotoLoader.tsx` but undefined, so the "Loading..." / "Photo not found." fallbacks render unstyled
+- [x] Redo authentication for admin panel
+- [x] update firestore rules
+- [x] add `.spinner` and `.errorMessage` styles to `components/PhotoViewer/PhotoViewer.module.scss` — currently referenced by `PhotoLoader.tsx` but undefined, so the "Loading..." / "Photo not found." fallbacks render unstyled
 - [ ] add catch for when home screen doesn't load correctly (is stuck in 0/9)
 - [ ] gallery images have greater clickable areas than what the image shows
