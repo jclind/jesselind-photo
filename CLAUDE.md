@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run dev` — start Next.js dev server with Turbopack (http://localhost:3000)
 - `npm run build` — production build; `postbuild` runs `next-sitemap` (sitemap excludes `/admin/*`)
 - `npm run start` — serve the production build
-- `npm run lint` — run `next lint`
+- `npm run lint` — run `eslint` against `eslint.config.mjs`, which extends `eslint-config-next`'s core-web-vitals and typescript presets
 
 There is no test suite configured.
 
@@ -57,3 +57,5 @@ SCSS modules co-located with components (`*.module.scss`). Globals in `app/globa
 - Several Firestore queries combine `where` + `orderBy` and require composite indexes; if a new filter is added, expect to create an index in the Firebase console.
 - Photo navigation in `usePhotoCollection` loads the entire filtered list on each viewer load (no pagination) — fine at current scale but worth knowing before adding heavy per-photo work.
 - `next-sitemap.config.js` hardcodes the production URL `https://jesselindphoto.vercel.app`.
+- ESLint is pinned to 9.x. ESLint 10 removed `context.getFilename()`, which `eslint-plugin-react` 7.x (a transitive dep of `eslint-config-next`) still calls, so every file throws on lint. Revisit once that plugin ships a v10-compatible release.
+- `npm run lint` currently exits 1 on pre-existing `react-hooks` v7 errors. See `todo.md` for the list.

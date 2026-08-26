@@ -18,7 +18,7 @@ export const reSerializePhotos = async () => {
     const snapshot = await getDocs(photosRef)
 
     // Extract docs
-    let photos: (Photo & { docRef: DocumentReference })[] = snapshot.docs.map(
+    const photos: (Photo & { docRef: DocumentReference })[] = snapshot.docs.map(
       d => {
         const data = d.data() as Photo
         return {
