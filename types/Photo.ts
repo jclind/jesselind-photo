@@ -28,4 +28,4 @@ export type PhotoViewerFilterType = {
   value: string
 }
 
-export type PhotoLoadError = 'not-found' | 'fetch-failed'
+export type PhotoLoadError = 'not-found' | 'fetch-failed' | 'image-failed'

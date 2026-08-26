@@ -26,6 +26,12 @@ const PhotoViewerPage = ({ params, filter, path }: PageProps) => {
     usePhotoCollection({ initialPhotoID: photoID, filter })
 
   const [showLoader, setShowLoader] = useState(false)
+  // The photo whose image request failed. Keyed by id rather than a boolean so
+  // navigating away clears it without an effect.
+  const [failedPhotoID, setFailedPhotoID] = useState<string | null>(null)
+  // A doc with no fullUrl has nothing to request in the first place. Same blank
+  // frame as a failed request, so it gets the same message.
+  const imageFailed = !!photo && (!photo.fullUrl || failedPhotoID === photo.id)
 
   const prevBtnRef = useRef<HTMLButtonElement>(null)
   const nextBtnRef = useRef<HTMLButtonElement>(null)
@@ -105,8 +111,13 @@ const PhotoViewerPage = ({ params, filter, path }: PageProps) => {
     <div className={styles.SinglePhoto}>
       <div className={styles.content}>
         <div className={styles.inner} id='photoContainer'>
-          <PhotoLoader showLoader={showLoader} error={error} />
-          {photo && <PhotoImage photo={photo} />}
+          <PhotoLoader
+            showLoader={showLoader}
+            error={error ?? (imageFailed ? 'image-failed' : null)}
+          />
+          {photo && !imageFailed && (
+            <PhotoImage photo={photo} onError={setFailedPhotoID} />
+          )}
           <button
             onClick={handleClickPrev}
             className={styles.prev_btn}
