@@ -6,6 +6,9 @@ import { getPhotoAlt } from '@/util/getPhotoAlt'
 
 interface PhotoImageProps {
   photo: Photo
+  // Called with the photo id when the image request settles as an error, so
+  // the viewer can show a message instead of an invisible img over the blur.
+  onError: (photoId: string) => void
 }
 
 // generateBlurPlaceholder always returns `data:image/jpeg;base64,<base64>`.
@@ -13,7 +16,7 @@ interface PhotoImageProps {
 // CSS url() string and can break out of the quoted context.
 const VALID_BLUR = /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/
 
-const PhotoImage = ({ photo }: PhotoImageProps) => {
+const PhotoImage = ({ photo, onError }: PhotoImageProps) => {
   const photoId = photo.id
   // Which photo the reveal belongs to, so a load that resolves after the
   // viewer moved on cannot un-hide the wrong image.
@@ -30,15 +33,25 @@ const PhotoImage = ({ photo }: PhotoImageProps) => {
   const revealRef = useCallback(
     (img: HTMLImageElement | null) => {
       if (!img) return
-      if (img.complete && img.naturalWidth > 0) {
-        setLoadedId(photoId)
+      // `complete` is true for a request that failed as well as one that
+      // succeeded, so naturalWidth is what separates them. Either way the
+      // request has settled and no event is coming, so both branches have to
+      // return rather than fall through to a listener that can never fire.
+      if (img.complete) {
+        if (img.naturalWidth > 0) setLoadedId(photoId)
+        else onError(photoId)
         return
       }
       const reveal = () => setLoadedId(photoId)
+      const fail = () => onError(photoId)
       img.addEventListener('load', reveal)
-      return () => img.removeEventListener('load', reveal)
+      img.addEventListener('error', fail)
+      return () => {
+        img.removeEventListener('load', reveal)
+        img.removeEventListener('error', fail)
+      }
     },
-    [photoId]
+    [photoId, onError]
   )
 
   if (!photo.fullUrl) return null

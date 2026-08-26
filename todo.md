@@ -8,7 +8,7 @@
 - [ ] recalculate gallery layout on page size update
 - [x] Redo authentication for admin panel
 - [x] update firestore rules
-- [x] add `.spinner` and `.errorMessage` styles to `components/PhotoViewer/PhotoViewer.module.scss` — currently referenced by `PhotoLoader.tsx` but undefined, so the "Loading..." / "Photo not found." fallbacks render unstyled
+- [x] add styles for the `PhotoLoader` messages in `components/PhotoViewer/PhotoViewer.module.scss`. `.spinner` was renamed `.loadingMessage` since it never rendered a spinner; it and `.errorMessage` now use `$secondary-text` / `$fs-small` instead of falling back to body defaults
 - [ ] add catch for when home screen doesn't load correctly (is stuck in 0/9)
 - [ ] gallery images have greater clickable areas than what the image shows
 
