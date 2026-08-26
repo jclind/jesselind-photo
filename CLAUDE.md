@@ -59,3 +59,4 @@ SCSS modules co-located with components (`*.module.scss`). Globals in `app/globa
 - `next-sitemap.config.js` hardcodes the production URL `https://jesselindphoto.vercel.app`.
 - ESLint is pinned to 9.x. ESLint 10 removed `context.getFilename()`, which `eslint-plugin-react` 7.x (a transitive dep of `eslint-config-next`) still calls, so every file throws on lint. Revisit once that plugin ships a v10-compatible release.
 - `npm run lint` currently exits 1 on pre-existing `react-hooks` v7 errors. See `todo.md` for the list.
+- `AGENTS.md` exists to host the agent-rules block that `next dev` injects when it detects an AI agent. Next writes to `AGENTS.md` in preference to `CLAUDE.md`, so keeping it there leaves this file hand-maintained. Don't delete it, or the block lands here instead. `agentRules: false` in `next.config.ts` turns the whole thing off.
