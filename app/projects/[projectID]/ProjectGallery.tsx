@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import styles from './page.module.scss'
 import { ProjectType } from '@/data/projects'
 import GalleryTemplate from '@/components/GalleryTemplate'

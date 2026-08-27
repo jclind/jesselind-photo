@@ -4,9 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import {
   collection,
-  addDoc,
   serverTimestamp,
-  Timestamp,
   runTransaction,
   doc,
 } from 'firebase/firestore/lite'

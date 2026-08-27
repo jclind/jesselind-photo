@@ -14,4 +14,10 @@
 
 # chores
 
-- [ ] migrate lint to flat-config ESLint. `npm run lint` runs `next lint`, which Next 16 removed, so it fails with "Invalid project directory provided, no such directory: ./lint". The repo still has an `.eslintrc`. Needs an `eslint.config.mjs` plus `eslint-config-next` wired up, and the `lint` script pointed at `eslint`. `CLAUDE.md` documents the old command and needs updating too.
+- [x] migrate lint to flat-config ESLint. `eslint.config.mjs` now spreads `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript`, and the `lint` script runs `eslint` directly. Pinned to `eslint@^9`: eslint 10 crashes because `eslint-plugin-react` 7.x still calls the removed `context.getFilename()`.
+- [ ] clear the 18 react-hooks errors the new lint setup surfaced. All from `eslint-plugin-react-hooks` v7, which added compiler-backed rules the old config never ran. Until these are fixed `npm run lint` exits 1.
+  - `react-hooks/refs`, 13 errors in `components/GalleryTemplate/GalleryTemplate.tsx` lines 53-69. `initialEntryRef.current` is read and written during render for lazy init, and the `useState` initializers read `initial` off it. This drives scroll restoration, so changing it needs manual testing of back-navigation from a photo viewer.
+  - `react-hooks/set-state-in-effect`, 5 errors: `app/admin/add-photo/page.tsx:49`, `components/Common/Navbar/Navbar.tsx:16`, `components/GalleryTemplate/PhotoRows.tsx:65`, `components/PhotoViewer/PhotoViewer.tsx:42`, `hooks/usePhotoCollection.tsx:100`.
+- [ ] `GalleryTemplate` accepts a `pageSize` prop, defaults it to 10, and never reads it. All three galleries pass `pageSize={PAGE_SIZE}` and it goes nowhere. Either wire it into the fetch or drop the prop and the three call sites.
+- [ ] `react-hooks/exhaustive-deps` warnings in `components/PhotoViewer/PhotoViewer.tsx:108` (`handleClickNext`, `handleClickPrev`) and `hooks/usePhotoCollection.tsx:169` (`filter`).
+- [ ] swap the raw `<img>` upload preview in `app/admin/add-photo/page.tsx:214` for `next/image`, or silence `@next/next/no-img-element` there on purpose.
