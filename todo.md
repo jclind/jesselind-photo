@@ -9,7 +9,7 @@
 - [x] Redo authentication for admin panel
 - [x] update firestore rules
 - [x] add styles for the `PhotoLoader` messages in `components/PhotoViewer/PhotoViewer.module.scss`. `.spinner` was renamed `.loadingMessage` since it never rendered a spinner; it and `.errorMessage` now use `$secondary-text` / `$fs-small` instead of falling back to body defaults
-- [ ] add catch for when home screen doesn't load correctly (is stuck in 0/9)
+- [x] add catch for when home screen doesn't load correctly (is stuck in 0/9). `HomeImages` now counts an image as settled on `error` as well as `load`, tracks them through DOM listeners instead of React's `onLoad` (so images that finish before hydration still count), and reveals the page after 10s no matter what. `page.module.scss` has a 14s CSS-only fallback for the case where the bundle never runs, since the overlay is `position: fixed; z-index: 20` and otherwise blocks the whole site.
 - [ ] gallery images have greater clickable areas than what the image shows
 
 # chores
