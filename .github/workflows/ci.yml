@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# A new push to the same branch makes the in-flight run irrelevant.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # package.json pins engines.node to >=24.
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint -- --max-warnings=0
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      # `next build` prerenders /admin, which calls getAuth() at module scope
+      # and throws auth/invalid-api-key when the key is missing. The build
+      # therefore needs the Firebase vars set to something. Placeholders are
+      # enough: nothing is fetched from Firestore during the build itself, and
+      # these are NEXT_PUBLIC_ values that ship to the browser anyway, so real
+      # secrets would buy no privacy here.
+      #
+      # The tradeoff: next-sitemap's postbuild step pulls photo URLs from
+      # Firestore, and against a placeholder project that call is denied. It
+      # catches the failure and emits a sitemap with no photo URLs, so this job
+      # will not catch a regression in that query. Vercel's build, which has
+      # the real values, is what produces the published sitemap.
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: ci-placeholder-key
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ci.firebaseapp.com
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ci-placeholder
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ci-placeholder.appspot.com
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '000000000000'
+          NEXT_PUBLIC_FIREBASE_APP_ID: '1:000000000000:web:0000000000000000000000'
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: G-CIPLACEHOLD
