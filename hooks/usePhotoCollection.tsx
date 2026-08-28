@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { db } from '@/lib/firebase'
 import {
   collection,
@@ -84,81 +84,137 @@ const fetchNeighbor = async (
   return wrapSnap.empty ? null : (wrapSnap.docs[0].data() as Photo)
 }
 
+type CollectionState = {
+  // Which photo + filter combination the rest of these fields describe.
+  key: string
+  photo: Photo | null
+  prevPhoto: Photo | null
+  nextPhoto: Photo | null
+  photoLoading: boolean
+  neighborsLoading: boolean
+  error: PhotoLoadError | null
+}
+
+const requestKey = (photoID: string, filter?: PhotoViewerFilterType) =>
+  `${photoID}|${filter?.field ?? ''}|${filter?.value ?? ''}`
+
+// The preload cache is shared across filter scopes, so a cached photo for this
+// id only counts as a hit when it also matches the active filter. On a miss the
+// caller falls through to fetchOne, which enforces the filter server-side.
+const cacheHit = (
+  photoID: string,
+  filter?: PhotoViewerFilterType
+): Photo | null => {
+  const cached = usePhotoStore.getState().cache[photoID]
+  if (!cached) return null
+  if (filter && cached[filter.field] !== filter.value) return null
+  return cached
+}
+
+// Seeded from the preload cache so that stepping to a neighbor the viewer has
+// already prefetched paints that photo on its first render. Without the seed
+// the reset below would blank the image for a frame before the effect commits.
+const pendingState = (
+  photoID: string,
+  filter?: PhotoViewerFilterType
+): CollectionState => {
+  const hit = cacheHit(photoID, filter)
+  return {
+    key: requestKey(photoID, filter),
+    photo: hit,
+    prevPhoto: null,
+    nextPhoto: null,
+    photoLoading: !hit,
+    neighborsLoading: true,
+    error: null,
+  }
+}
+
 export function usePhotoCollection({
   initialPhotoID,
   filter,
 }: UsePhotoCollectionProps) {
-  const [photo, setPhoto] = useState<Photo | null>(null)
-  const [prevPhoto, setPrevPhoto] = useState<Photo | null>(null)
-  const [nextPhoto, setNextPhoto] = useState<Photo | null>(null)
-  const [photoLoading, setPhotoLoading] = useState(true)
-  const [neighborsLoading, setNeighborsLoading] = useState(true)
-  const [error, setError] = useState<PhotoLoadError | null>(null)
+  const filterField = filter?.field
+  const filterValue = filter?.value
+  // One filter object, rebuilt from the primitives and memoized. Render and the
+  // effect both key off this exact value, so the two can't derive keys that
+  // disagree and strand the hook in its pending state.
+  const activeFilter = useMemo<PhotoViewerFilterType | undefined>(
+    () =>
+      filterField ? { field: filterField, value: filterValue ?? '' } : undefined,
+    [filterField, filterValue]
+  )
+  const key = requestKey(initialPhotoID, activeFilter)
+
+  const [result, setResult] = useState<CollectionState>(() =>
+    pendingState(initialPhotoID, activeFilter)
+  )
+  // A key mismatch means the caller has moved to a different photo and the
+  // effect below has not committed anything for it yet. Reporting the pending
+  // state here resets everything in the same render as the id change, so the
+  // viewer never paints a frame of the previous photo under the new URL.
+  const state =
+    result.key === key ? result : pendingState(initialPhotoID, activeFilter)
 
   useEffect(() => {
     let cancelled = false
-    setError(null)
-    setPhoto(null)
-    setPrevPhoto(null)
-    setNextPhoto(null)
-    setPhotoLoading(true)
-    setNeighborsLoading(true)
+    const draft = pendingState(initialPhotoID, activeFilter)
+    const commit = (partial: Partial<CollectionState>) => {
+      Object.assign(draft, partial)
+      setResult({ ...draft })
+    }
 
     const load = async () => {
       const store = usePhotoStore.getState()
 
-      // 1. Current photo — cache hit, else fetch. The cache is shared across
-      // filter scopes, so a cached photo for this id only counts as a hit when
-      // it also matches the active filter; otherwise fall through to fetchOne
-      // (which enforces the filter and returns null on mismatch).
-      const cached = store.cache[initialPhotoID]
-      let current: Photo | null =
-        cached && (!filter || cached[filter.field] === filter.value)
-          ? cached
-          : null
+      // 1. Current photo — cache hit, else fetch.
+      let current: Photo | null = cacheHit(initialPhotoID, activeFilter)
 
       if (current) {
-        setPhoto(current)
-        setPhotoLoading(false)
+        commit({ photo: current, photoLoading: false })
       } else {
         try {
-          current = await fetchOne(initialPhotoID, filter)
+          current = await fetchOne(initialPhotoID, activeFilter)
         } catch (err) {
           if (cancelled) return
           console.error(err)
-          setError('fetch-failed')
-          setPhotoLoading(false)
-          setNeighborsLoading(false)
+          commit({
+            error: 'fetch-failed',
+            photoLoading: false,
+            neighborsLoading: false,
+          })
           return
         }
         if (cancelled) return
         if (!current) {
-          setError('not-found')
-          setPhotoLoading(false)
-          setNeighborsLoading(false)
+          commit({
+            error: 'not-found',
+            photoLoading: false,
+            neighborsLoading: false,
+          })
           return
         }
-        setPhoto(current)
-        setPhotoLoading(false)
+        commit({ photo: current, photoLoading: false })
         store.addPhoto(current)
       }
 
       // 2. Neighbors in parallel — best-effort; failures don't block the viewer
       const results = await Promise.allSettled([
-        fetchNeighbor(current.sequenceNumber, 'prev', filter),
-        fetchNeighbor(current.sequenceNumber, 'next', filter),
+        fetchNeighbor(current.sequenceNumber, 'prev', activeFilter),
+        fetchNeighbor(current.sequenceNumber, 'next', activeFilter),
       ])
       if (cancelled) return
       const [prevRes, nextRes] = results
+      const neighbors: Partial<CollectionState> = { neighborsLoading: false }
       if (prevRes.status === 'fulfilled' && prevRes.value) {
-        setPrevPhoto(prevRes.value)
+        neighbors.prevPhoto = prevRes.value
         store.addPhoto(prevRes.value)
       }
       if (nextRes.status === 'fulfilled' && nextRes.value) {
-        setNextPhoto(nextRes.value)
+        neighbors.nextPhoto = nextRes.value
         store.addPhoto(nextRes.value)
       }
-      setNeighborsLoading(false)
+      commit(neighbors)
     }
 
     load()
@@ -166,7 +222,14 @@ export function usePhotoCollection({
     return () => {
       cancelled = true
     }
-  }, [initialPhotoID, filter?.field, filter?.value])
+  }, [initialPhotoID, activeFilter])
 
-  return { photo, prevPhoto, nextPhoto, photoLoading, neighborsLoading, error }
+  return {
+    photo: state.photo,
+    prevPhoto: state.prevPhoto,
+    nextPhoto: state.nextPhoto,
+    photoLoading: state.photoLoading,
+    neighborsLoading: state.neighborsLoading,
+    error: state.error,
+  }
 }

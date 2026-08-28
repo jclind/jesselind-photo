@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getImageProps } from 'next/image'
 import { preload } from 'react-dom'
@@ -25,7 +25,16 @@ const PhotoViewerPage = ({ params, filter, path }: PageProps) => {
   const { photo, prevPhoto, nextPhoto, error, photoLoading } =
     usePhotoCollection({ initialPhotoID: photoID, filter })
 
-  const [showLoader, setShowLoader] = useState(false)
+  // Which load has been running long enough to earn a loader. Keyed to the
+  // individual load rather than the photo, and reset during render when a new
+  // one starts, so a photo that was slow once doesn't skip the 250ms wait the
+  // next time round.
+  const loadKey = `${photoID}|${photoLoading}`
+  const [loader, setLoader] = useState({ key: loadKey, slow: false })
+  if (loader.key !== loadKey) {
+    setLoader({ key: loadKey, slow: false })
+  }
+  const showLoader = photoLoading && loader.key === loadKey && loader.slow
   // The photo whose image request failed. Keyed by id rather than a boolean so
   // navigating away clears it without an effect.
   const [failedPhotoID, setFailedPhotoID] = useState<string | null>(null)
@@ -38,13 +47,10 @@ const PhotoViewerPage = ({ params, filter, path }: PageProps) => {
   const lastDirectionRef = useRef<'prev' | 'next' | null>(null)
 
   useEffect(() => {
-    if (!photoLoading) {
-      setShowLoader(false)
-      return
-    }
-    const timer = setTimeout(() => setShowLoader(true), 250)
+    if (!photoLoading) return
+    const timer = setTimeout(() => setLoader({ key: loadKey, slow: true }), 250)
     return () => clearTimeout(timer)
-  }, [photoLoading])
+  }, [photoLoading, loadKey])
 
   // Preload neighbor photos via the same /_next/image URL that <PhotoImage>
   // will request, so prev/next navigation hits the browser HTTP cache.
@@ -66,17 +72,19 @@ const PhotoViewerPage = ({ params, filter, path }: PageProps) => {
     }
   }, [prevPhoto, nextPhoto])
 
-  const handleClickPrev = () => {
+  // Memoized so the keydown effect below can depend on them by identity
+  // instead of restating their closure in its own dep array.
+  const handleClickPrev = useCallback(() => {
     if (!prevPhoto) return
     lastDirectionRef.current = 'prev'
     router.push(`${path}/${prevPhoto.id}`)
-  }
+  }, [prevPhoto, router, path])
 
-  const handleClickNext = () => {
+  const handleClickNext = useCallback(() => {
     if (!nextPhoto) return
     lastDirectionRef.current = 'next'
     router.push(`${path}/${nextPhoto.id}`)
-  }
+  }, [nextPhoto, router, path])
 
   useEffect(() => {
     const direction = lastDirectionRef.current
@@ -105,7 +113,7 @@ const PhotoViewerPage = ({ params, filter, path }: PageProps) => {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [prevPhoto, nextPhoto])
+  }, [handleClickPrev, handleClickNext])
 
   return (
     <div className={styles.SinglePhoto}>

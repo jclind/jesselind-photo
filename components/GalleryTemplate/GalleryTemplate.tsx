@@ -20,7 +20,6 @@ type GalleryProps = {
   fetchPhotos: (
     lastDoc?: QueryDocumentSnapshot
   ) => Promise<{ photos: Photo[]; lastDoc: QueryDocumentSnapshot | null }>
-  pageSize?: number
   imagePath: string
   topGapSmall?: boolean
   title?: string
@@ -41,16 +40,17 @@ function readInitialEntry(imagePath: string): GalleryEntry | undefined {
 
 const GalleryTemplate = ({
   fetchPhotos,
-  pageSize = 10,
   imagePath,
   topGapSmall,
   title,
 }: GalleryProps) => {
-  const initialEntryRef = useRef<GalleryEntry | undefined>(undefined)
-  if (initialEntryRef.current === undefined) {
-    initialEntryRef.current = readInitialEntry(imagePath)
-  }
-  const initial = initialEntryRef.current
+  // Lazy state init, not a ref: the decision is made once on mount and then
+  // read by the initializers below. A ref read during render trips
+  // react-hooks/refs, and useState's initializer is the sanctioned way to do
+  // run-once work whose result render depends on.
+  const [initial] = useState<GalleryEntry | undefined>(() =>
+    readInitialEntry(imagePath)
+  )
   const pathname = usePathname()
   const lastRestoredPathRef = useRef<string | null>(null)
 
