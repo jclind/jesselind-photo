@@ -13,6 +13,7 @@ import {
   startAfter,
   limit,
   getDocs,
+  getCount,
 } from 'firebase/firestore/lite'
 
 type ProjectGalleryProps = {
@@ -57,9 +58,20 @@ const ProjectGallery = ({ currProject }: ProjectGalleryProps) => {
 
     return { photos, lastDoc: newLastDoc }
   }
+
+  // No orderBy, so this needs only the single-field index Firestore maintains
+  // automatically. Adding one would mean a composite index per project.
+  const countPhotos = async () => {
+    const snapshot = await getCount(
+      query(collection(db, 'photos'), where('projectID', '==', projectID))
+    )
+    return snapshot.data().count
+  }
+
   return (
     <GalleryTemplate
       fetchPhotos={fetchPhotos}
+      countPhotos={countPhotos}
       imagePath={imagePath}
       topGapSmall={true}
     />

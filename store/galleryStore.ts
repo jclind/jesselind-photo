@@ -8,6 +8,10 @@ export interface GalleryEntry {
   hasMore: boolean
   scrollY: number
   isThumbnailMode: boolean
+  // Result of the aggregate count query. null means we haven't got an answer
+  // yet, or the query failed. Cached here so returning from the viewer doesn't
+  // spend a second count.
+  total: number | null
 }
 
 interface GalleryStore {

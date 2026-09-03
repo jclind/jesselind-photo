@@ -3,6 +3,8 @@
 # features
 
 - [ ] add number of photos in cycle in each gallery / photo page -[X] ad loading where number of loaded images are shown. (Added to home page)
+  - [x] galleries. `GalleryTemplate` takes an optional `countPhotos` callback, each gallery supplies a Firestore `getCount` aggregate matching its own filter, and `PhotoCount` renders the result bottom-right. Reads `20 / 76` while paging and collapses to `76` once everything is loaded. The total is cached in `galleryStore` so back-navigation from the viewer costs nothing.
+  - [ ] photo viewer. Would want a position rather than a count, `18 / 76`, which `usePhotoCollection` can already derive since it loads the whole ordered list.
 - [x] eventually figure out how to make home page loading not be called again (or be delayed while checking for loaded images) if it has already been visited (and the images have been loaded therefore) in this session.
 - [x] set persistent state for gallery style
 - [ ] recalculate gallery layout on page size update

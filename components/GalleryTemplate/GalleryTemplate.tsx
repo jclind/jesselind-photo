@@ -12,6 +12,7 @@ import { LayoutGrid, PanelsTopLeft } from 'lucide-react'
 import type { QueryDocumentSnapshot } from 'firebase/firestore/lite'
 import PhotoThumbnail from './PhotoThumbnail'
 import PhotoRows from './PhotoRows'
+import PhotoCount from './PhotoCount'
 import { Photo } from '@/types/Photo'
 import { useGalleryStore, type GalleryEntry } from '@/store/galleryStore'
 import { usePathname } from 'next/navigation'
@@ -21,6 +22,11 @@ type GalleryProps = {
     lastDoc?: QueryDocumentSnapshot
   ) => Promise<{ photos: Photo[]; lastDoc: QueryDocumentSnapshot | null }>
   imagePath: string
+  // Resolves to how many photos this gallery's filter matches in total. Each
+  // caller supplies it because only the caller knows its own filter. Optional:
+  // a gallery that omits it just shows the count of what it has once it has
+  // loaded everything.
+  countPhotos?: () => Promise<number>
   topGapSmall?: boolean
   title?: string
 }
@@ -41,6 +47,7 @@ function readInitialEntry(imagePath: string): GalleryEntry | undefined {
 const GalleryTemplate = ({
   fetchPhotos,
   imagePath,
+  countPhotos,
   topGapSmall,
   title,
 }: GalleryProps) => {
@@ -63,10 +70,12 @@ const GalleryTemplate = ({
   const [isThumbnailMode, setIsThumbnailMode] = useState(
     initial?.isThumbnailMode ?? true
   )
+  const [total, setTotal] = useState<number | null>(initial?.total ?? null)
   const [liveMessage, setLiveMessage] = useState('')
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const fetchingRef = useRef(false)
   const initialFetchDoneRef = useRef(!!initial)
+  const countStartedRef = useRef(initial?.total != null)
 
   // Restore scroll synchronously before paint so we beat Next.js's default
   // scroll-to-top, which runs in a post-paint effect inside the App Router's
@@ -189,6 +198,30 @@ const GalleryTemplate = ({
     return () => window.removeEventListener('scroll', onScroll)
   }, [imagePath])
 
+  // One aggregate count per gallery, on mount. Firestore bills this as a
+  // single read per 1000 matched docs rather than one per doc, so it costs far
+  // less than the paging queries it annotates. countPhotos is a fresh closure
+  // on every render, so the ref guard, not the dep array, is what holds this to
+  // one request.
+  //
+  // No cleanup, deliberately. A cancelled-flag cleanup would fire on the first
+  // re-render, kill the only in-flight request, and then find the ref already
+  // set and never retry, so the count would never arrive. Strict Mode's
+  // mount/unmount/mount does the same thing. A resolve after unmount is a no-op
+  // in React 18, which is the cheaper problem to have.
+  useEffect(() => {
+    if (countStartedRef.current || !countPhotos) return
+    countStartedRef.current = true
+    countPhotos()
+      .then(setTotal)
+      .catch(() => {
+        // A failed count isn't worth surfacing. The readout below falls back to
+        // the loaded count once paging reaches the end, and clearing the guard
+        // lets a later remount try again.
+        countStartedRef.current = false
+      })
+  }, [countPhotos])
+
   const loadMore = useCallback(async () => {
     if (fetchingRef.current || !hasMore) return
     fetchingRef.current = true
@@ -252,8 +285,9 @@ const GalleryTemplate = ({
         existing?.scrollY ??
         (typeof window !== 'undefined' ? window.scrollY : 0),
       isThumbnailMode,
+      total,
     })
-  }, [photos, lastDoc, hasMore, isThumbnailMode, imagePath])
+  }, [photos, lastDoc, hasMore, isThumbnailMode, total, imagePath])
 
   const handleModeToggle = () => {
     window.scrollTo(0, 0)
@@ -263,6 +297,14 @@ const GalleryTemplate = ({
   const createFullImagePath = (photo: Photo): string => {
     return `${imagePath}/${photo.id}`
   }
+
+  // What we are willing to call a total. The count query is a snapshot taken
+  // on mount, so a photo uploaded mid-session can push the loaded count past
+  // it; the larger of the two is the one that isn't wrong. With no count at
+  // all, paging to the end still tells us the exact answer. Before that, we
+  // don't know, and the readout stays hidden rather than guessing.
+  const knownTotal =
+    total !== null ? Math.max(total, photos.length) : hasMore ? null : photos.length
 
   return (
     <div
@@ -307,6 +349,9 @@ const GalleryTemplate = ({
         </div>
         {hasMore && <div ref={sentinelRef} aria-hidden />}
       </div>
+      {knownTotal !== null && (
+        <PhotoCount loaded={photos.length} total={knownTotal} />
+      )}
     </div>
   )
 }

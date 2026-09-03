@@ -60,6 +60,61 @@
       stroke-width: 1.5;
     }
   }
+  .photo_count {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 8;
+
+    // Same glass recipe as .toggle_mode_btn. In rows mode a photo can sit
+    // directly under this corner, and plain $secondary-text on a dark frame
+    // is unreadable. Matching the toggle also makes the two bottom corners
+    // read as one set rather than two unrelated overlays.
+    background: linear-gradient(rgba(30, 30, 30, 0.6), rgba(20, 20, 20, 0.6));
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+
+    // Height is pinned to the toggle's 42px so the two sit on one line. No
+    // hover or active states: this is a readout, not a control.
+    min-height: 42px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: $primary-background;
+    font-size: $fs-xxs;
+    font-weight: 300;
+    letter-spacing: 0.18em;
+    line-height: 1;
+    white-space: nowrap;
+    user-select: none;
+
+    .count_value {
+      // Letter-spacing appends a gap after the final digit, which pushes the
+      // text off-center inside the pill. Pull that one gap back.
+      margin-right: -0.18em;
+      // Keeps the pill from twitching as the loaded count climbs through
+      // digits of different widths.
+      font-variant-numeric: tabular-nums;
+    }
+
+    .count_divider {
+      color: rgba(255, 255, 255, 0.45);
+      margin: 0 0.35em 0 0.15em;
+    }
+
+    @media (max-width: $breakpoint-md) {
+      bottom: 20px;
+      right: 20px;
+      min-height: 36px;
+      padding: 0 13px;
+      font-size: $fs-3xs;
+    }
+  }
   .content {
     width: 100%;
     a {

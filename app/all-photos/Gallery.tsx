@@ -8,6 +8,7 @@ import {
   startAfter,
   limit,
   getDocs,
+  getCount,
   type QueryDocumentSnapshot,
 } from 'firebase/firestore/lite'
 import { db } from '@/lib/firebase'
@@ -43,9 +44,15 @@ const Gallery = () => {
     return { photos, lastDoc: newLastDoc }
   }
 
+  const countPhotos = async () => {
+    const snapshot = await getCount(collection(db, 'photos'))
+    return snapshot.data().count
+  }
+
   return (
     <GalleryTemplate
       fetchPhotos={fetchPhotos}
+      countPhotos={countPhotos}
       imagePath={imagePath}
     />
   )

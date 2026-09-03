@@ -8,6 +8,7 @@ import {
   startAfter,
   limit,
   getDocs,
+  getCount,
   where,
   type QueryDocumentSnapshot,
 } from 'firebase/firestore/lite'
@@ -58,9 +59,20 @@ const CollectionGallery = () => {
 
     return { photos, lastDoc: newLastDoc }
   }
+
+  // No orderBy, so this needs only the single-field index Firestore maintains
+  // automatically. Adding one would mean a composite index per collection.
+  const countPhotos = async () => {
+    const snapshot = await getCount(
+      query(collection(db, 'photos'), where('category', '==', category.slug))
+    )
+    return snapshot.data().count
+  }
+
   return (
     <GalleryTemplate
       fetchPhotos={fetchPhotos}
+      countPhotos={countPhotos}
       imagePath={imagePath}
     />
   )
