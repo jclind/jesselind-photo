@@ -12,9 +12,13 @@ const Navbar = () => {
 
   const toggleIsOpen = () => setIsOpen(state => !state)
 
-  useEffect(() => {
+  // Close the menu when the route changes. Adjusting during render instead of
+  // in an effect means the menu is already gone on the new page's first frame.
+  const [menuPath, setMenuPath] = useState(pathname)
+  if (menuPath !== pathname) {
+    setMenuPath(pathname)
     setIsOpen(false)
-  }, [pathname])
+  }
 
   useEffect(() => {
     if (!isOpen) return
