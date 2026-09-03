@@ -1,12 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import {
   collection,
-  addDoc,
   serverTimestamp,
-  Timestamp,
   runTransaction,
   doc,
 } from 'firebase/firestore/lite'
@@ -34,6 +32,19 @@ export default function AddPhoto() {
   // Files & previews
   const [files, setFiles] = useState<File[]>([])
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
+  // Mirrors previewUrls so the unmount cleanup can revoke the last batch
+  // without re-running every time the selection changes.
+  const previewUrlsRef = useRef<string[]>([])
+
+  // Object URLs are created alongside the selection rather than derived from it
+  // in an effect, so every URL has exactly one revoke.
+  const selectFiles = (nextFiles: File[]) => {
+    previewUrlsRef.current.forEach(url => URL.revokeObjectURL(url))
+    const urls = nextFiles.map(file => URL.createObjectURL(file))
+    previewUrlsRef.current = urls
+    setFiles(nextFiles)
+    setPreviewUrls(urls)
+  }
 
   const [loading, setLoading] = useState(false)
   const [fileError, setFileError] = useState<string | null>(null)
@@ -43,18 +54,10 @@ export default function AddPhoto() {
     message: string
   } | null>(null)
 
-  // Generate previews when files change
-  useEffect(() => {
-    if (files.length === 0) {
-      setPreviewUrls([])
-      return
-    }
-
-    const urls = files.map(file => URL.createObjectURL(file))
-    setPreviewUrls(urls)
-
-    return () => urls.forEach(url => URL.revokeObjectURL(url))
-  }, [files])
+  useEffect(
+    () => () => previewUrlsRef.current.forEach(url => URL.revokeObjectURL(url)),
+    []
+  )
 
   async function getImageDimensionsFromFile(
     file: File
@@ -174,7 +177,7 @@ export default function AddPhoto() {
         message: `Uploaded ${files.length} photo${files.length === 1 ? '' : 's'}.`,
       })
       // Reset form
-      setFiles([])
+      selectFiles([])
       setTitle('')
       setCategory('')
       setDescription('')
@@ -211,6 +214,11 @@ export default function AddPhoto() {
                     }}
                   >
                     {previewUrls.map((url, i) => (
+                      // Deliberately a raw <img>. These are blob: URLs for
+                      // files the admin just picked, so there is nothing for
+                      // the image optimizer to fetch and no intrinsic size to
+                      // give next/image. The preview never leaves this form.
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         key={i}
                         src={url}
@@ -258,7 +266,7 @@ export default function AddPhoto() {
                       ? `Skipped ${rejected.length} file(s): ${rejected.join('; ')}`
                       : null
                   )
-                  setFiles(accepted)
+                  selectFiles(accepted)
                 }}
               />
             </label>

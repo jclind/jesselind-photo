@@ -5,6 +5,9 @@
   padding: var(--vertical-padding) var(--horizontal-padding);
 
   $animation-delay: 0.3s;
+  // Longer than the REVEAL_TIMEOUT_MS in HomeImages, so this only ever fires
+  // when the JS never got the chance to.
+  $fallback-delay: 14s;
   .content {
     --container-width: calc(100vw - var(--horizontal-padding) * 2);
 
@@ -13,8 +16,12 @@
     width: 100%;
     .imagesContainer {
       opacity: 0;
+      // Fallback for a page that never hydrates: the counter in HomeImages
+      // can't reveal anything if its JS never runs, so CSS does it instead.
+      animation: fallbackReveal 0.4s linear $fallback-delay forwards;
       &.loaded {
         opacity: 1;
+        animation: none;
         transition: opacity 0.01s linear;
         transition-delay: $animation-delay;
       }
@@ -213,6 +220,9 @@
       font-weight: 200 !important;
       width: 1ch;
     }
+    // Same fallback as .imagesContainer. Uses its own keyframes so adding
+    // .loaded swaps the animation name and restarts the fade from the top.
+    animation: fallbackFadeOutToBack 3s ease $fallback-delay forwards;
     &.loaded {
       animation: fadeOutToBack 3s ease forwards;
       animation-delay: $animation-delay;
@@ -248,5 +258,28 @@
   100% {
     opacity: 0;
     z-index: -10;
+  }
+}
+
+@keyframes fallbackFadeOutToBack {
+  0% {
+    opacity: 1;
+  }
+  20% {
+    opacity: 0;
+    pointer-events: none;
+  }
+  100% {
+    opacity: 0;
+    z-index: -10;
+  }
+}
+
+@keyframes fallbackReveal {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
   }
 }

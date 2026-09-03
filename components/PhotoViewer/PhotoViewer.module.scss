@@ -63,6 +63,11 @@
       background-repeat: no-repeat;
       pointer-events: none;
     }
+    .loadingMessage,
+    .errorMessage {
+      color: $secondary-text;
+      font-size: $fs-small;
+    }
     .photo {
       display: block;
       width: 100%;

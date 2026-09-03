@@ -61,7 +61,6 @@ const CollectionGallery = () => {
   return (
     <GalleryTemplate
       fetchPhotos={fetchPhotos}
-      pageSize={PAGE_SIZE}
       imagePath={imagePath}
     />
   )

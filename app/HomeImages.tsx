@@ -1,44 +1,97 @@
 'use client'
 
 import Link from 'next/link'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import styles from './page.module.scss'
 import Image from 'next/image'
 
+const TOTAL_IMAGES = 9
+
+// The counter sits on a fixed, full-screen overlay, so a single image that
+// never fires `load` locks the user out of the whole site. Reveal the page
+// anyway once this much time has passed.
+const REVEAL_TIMEOUT_MS = 10000
+
 const HomeImages = () => {
-  const totalImages = 9
+  const containerRef = useRef<HTMLDivElement>(null)
 
-  const [loadedImages, setLoadedImages] = useState(0)
-  const [allLoaded, setAllLoaded] = useState(false)
+  const [settledImages, setSettledImages] = useState(0)
+  const [revealed, setRevealed] = useState(false)
 
-  const handleImageLoad = () => {
-    setLoadedImages(prev => prev + 1)
-  }
-
+  // Listen on the DOM elements instead of React's onLoad. Images can finish
+  // before hydration attaches a handler, and an image that 404s or is blocked
+  // fires `error` rather than `load`. Both count as settled here.
   useEffect(() => {
-    if (loadedImages === totalImages) {
-      // wait until next paint
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setAllLoaded(true)
-        })
+    const container = containerRef.current
+    if (!container) return
+
+    const images = Array.from(container.querySelectorAll('img'))
+    const settled = new Set<HTMLImageElement>()
+
+    const markSettled = (img: HTMLImageElement) => {
+      if (settled.has(img)) return
+      settled.add(img)
+      setSettledImages(settled.size)
+    }
+
+    const handleSettle = (event: Event) => {
+      markSettled(event.currentTarget as HTMLImageElement)
+    }
+
+    const pending: HTMLImageElement[] = []
+    images.forEach(img => {
+      if (img.complete) {
+        markSettled(img)
+        return
+      }
+      pending.push(img)
+      img.addEventListener('load', handleSettle)
+      img.addEventListener('error', handleSettle)
+    })
+
+    return () => {
+      pending.forEach(img => {
+        img.removeEventListener('load', handleSettle)
+        img.removeEventListener('error', handleSettle)
       })
     }
-  }, [loadedImages, totalImages])
+  }, [])
+
+  useEffect(() => {
+    if (settledImages < TOTAL_IMAGES) return
+
+    // wait until next paint
+    let innerFrame = 0
+    const outerFrame = requestAnimationFrame(() => {
+      innerFrame = requestAnimationFrame(() => {
+        setRevealed(true)
+      })
+    })
+
+    return () => {
+      cancelAnimationFrame(outerFrame)
+      cancelAnimationFrame(innerFrame)
+    }
+  }, [settledImages])
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setRevealed(true)
+    }, REVEAL_TIMEOUT_MS)
+
+    return () => clearTimeout(timeout)
+  }, [])
 
   return (
     <>
-      <div
-        className={`${styles.loadingPage} ${allLoaded ? styles.loaded : ''}`}
-      >
-        <span>{loadedImages}</span>
+      <div className={`${styles.loadingPage} ${revealed ? styles.loaded : ''}`}>
+        <span>{settledImages}</span>
         <span>/</span>
-        <span>{totalImages}</span>
+        <span>{TOTAL_IMAGES}</span>
       </div>
       <div
-        className={`${styles.imagesContainer} ${
-          allLoaded ? styles.loaded : ''
-        }`}
+        ref={containerRef}
+        className={`${styles.imagesContainer} ${revealed ? styles.loaded : ''}`}
       >
         <Link
           href='/all-photos/00176'
@@ -49,7 +102,6 @@ const HomeImages = () => {
             fetchPriority='high'
             src='/images/home/1.webp'
             alt='Rainbow falling on dark mountain'
-            onLoad={handleImageLoad}
             width={3120}
             height={2080}
             sizes='(max-width: 576px) 92vw, 58vw'
@@ -63,7 +115,6 @@ const HomeImages = () => {
             loading='eager'
             src='/images/home/2.webp'
             alt='Two people with blue umbrellas'
-            onLoad={handleImageLoad}
             width={2080}
             height={3120}
             sizes='33vw'
@@ -77,7 +128,6 @@ const HomeImages = () => {
             loading='eager'
             src='/images/home/3.webp'
             alt='Ferris wheel with blue sky backdrop'
-            onLoad={handleImageLoad}
             width={3120}
             height={2080}
             sizes='(max-width: 576px) 50vw, 42vw'
@@ -91,7 +141,6 @@ const HomeImages = () => {
             loading='eager'
             src='/images/home/4.webp'
             alt='Cat sitting on fence'
-            onLoad={handleImageLoad}
             width={3120}
             height={2080}
             sizes='(max-width: 576px) 83vw, 58vw'
@@ -105,7 +154,6 @@ const HomeImages = () => {
             loading='eager'
             src='/images/home/5.webp'
             alt='Cat sitting upright'
-            onLoad={handleImageLoad}
             width={2080}
             height={3120}
             sizes='33vw'
@@ -119,7 +167,6 @@ const HomeImages = () => {
             loading='eager'
             src='/images/home/6.webp'
             alt='Building with sunset sky'
-            onLoad={handleImageLoad}
             width={3120}
             height={2080}
             sizes='58vw'
@@ -133,7 +180,6 @@ const HomeImages = () => {
             loading='eager'
             src='/images/home/7.webp'
             alt='Boat docked in harbor'
-            onLoad={handleImageLoad}
             width={3120}
             height={2080}
             sizes='42vw'
@@ -147,7 +193,6 @@ const HomeImages = () => {
             loading='eager'
             src='/images/home/8.webp'
             alt='Two birds standing in beach waves'
-            onLoad={handleImageLoad}
             width={3120}
             height={2080}
             sizes='42vw'
@@ -161,7 +206,6 @@ const HomeImages = () => {
             loading='eager'
             src='/images/home/9.webp'
             alt='Group of seagulls flying above lake at beach'
-            onLoad={handleImageLoad}
             width={3120}
             height={2080}
             sizes='58vw'

@@ -1,7 +1,5 @@
 'use client'
 
-import React from 'react'
-import styles from './page.module.scss'
 import { ProjectType } from '@/data/projects'
 import GalleryTemplate from '@/components/GalleryTemplate'
 import { db } from '@/lib/firebase'
@@ -62,7 +60,6 @@ const ProjectGallery = ({ currProject }: ProjectGalleryProps) => {
   return (
     <GalleryTemplate
       fetchPhotos={fetchPhotos}
-      pageSize={PAGE_SIZE}
       imagePath={imagePath}
       topGapSmall={true}
     />
