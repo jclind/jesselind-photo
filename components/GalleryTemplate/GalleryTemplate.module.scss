@@ -92,6 +92,10 @@
     line-height: 1;
     white-space: nowrap;
     user-select: none;
+    // In rows mode a full-bleed photo link runs under this corner. The toggle
+    // next to it is a control and earns the click; a readout doesn't, so let
+    // clicks fall through to the photo.
+    pointer-events: none;
 
     .count_value {
       // Letter-spacing appends a gap after the final digit, which pushes the
