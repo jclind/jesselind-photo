@@ -1,0 +1,26 @@
+version: 2
+updates:
+  # Weekly in-range bumps, grouped so minor+patch arrive as one PR. ESLint and
+  # TypeScript majors are ignored on purpose: both upgrades are blocked by the
+  # lint stack (see todo.md), so those PRs would fail CI by construction.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: eslint
+        update-types:
+          - version-update:semver-major
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
