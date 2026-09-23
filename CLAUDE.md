@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 - `npm run dev` — start Next.js dev server with Turbopack (http://localhost:3000)
-- `npm run build` — production build; `postbuild` runs `next-sitemap` (sitemap excludes `/admin/*`)
+- `npm run build` — production build. The sitemap and robots routes (`app/sitemap.ts`, `app/robots.ts`) read Firestore during the build, so the build fails without working Firebase values.
 - `npm run start` — serve the production build
 - `npm run lint` — run `eslint` against `eslint.config.mjs`, which extends `eslint-config-next`'s core-web-vitals and typescript presets
 
@@ -58,7 +58,7 @@ SCSS modules co-located with components (`*.module.scss`). Globals in `app/globa
 - `getPhotoID` zero-pads to 5 digits — keep sequenceNumber and id in sync; reSerialize is the only tool that fixes drift.
 - Several Firestore queries combine `where` + `orderBy` and require composite indexes; if a new filter is added, expect to create an index in the Firebase console.
 - Photo navigation in `usePhotoCollection` loads the entire filtered list on each viewer load (no pagination) — fine at current scale but worth knowing before adding heavy per-photo work.
-- `next-sitemap.config.js` hardcodes the production URL `https://jesselindphoto.vercel.app`.
-- There is no local `.env`, and `next build` prerenders `/admin`, which calls `getAuth()` at module scope and throws without an API key. Local builds need the placeholder `NEXT_PUBLIC_FIREBASE_*` values from `.github/workflows/ci.yml` exported in the shell. Those same placeholders make next-sitemap's postbuild emit an empty sitemap, so run `git checkout -- public/` after a local build to restore the committed sitemap files.
+- The production URL lives in one place, `lib/siteUrl.ts` (override with `NEXT_PUBLIC_SITE_URL`); the sitemap, robots, and contact data all read it.
+- There is no local `.env`, and `next build` needs working Firebase values twice over: the `/admin` prerender calls `getAuth()` at module scope, and `app/sitemap.ts` reads the `photos` collection, where a denied read fails the build. The real public values live in `.github/workflows/ci.yml`; export them in the shell for local builds.
 - ESLint is held at 9.x deliberately. ESLint 9 is EOL upstream (since 2026-08-06, no security patches), but 10 is blocked by `eslint-plugin-react` (a transitive dep of `eslint-config-next`): it still calls the removed `context.getFilename()` and has shipped no compatible release (jsx-eslint#3977). The rest of the lint stack (typescript-eslint, eslint-plugin-react-hooks) already supports 10. Revisit quarterly; don't bump ESLint ad hoc.
 - `AGENTS.md` exists to host the agent-rules block that `next dev` injects when it detects an AI agent. Next writes to `AGENTS.md` in preference to `CLAUDE.md`, so keeping it there leaves this file hand-maintained. Don't delete it, or the block lands here instead. `agentRules: false` in `next.config.ts` turns the whole thing off.
