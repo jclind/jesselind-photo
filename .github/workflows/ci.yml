@@ -32,24 +32,19 @@ jobs:
         run: npx tsc --noEmit
 
       # `next build` prerenders /admin, which calls getAuth() at module scope
-      # and throws auth/invalid-api-key when the key is missing. The build
-      # therefore needs the Firebase vars set to something. Placeholders are
-      # enough: nothing is fetched from Firestore during the build itself, and
-      # these are NEXT_PUBLIC_ values that ship to the browser anyway, so real
-      # secrets would buy no privacy here.
-      #
-      # The tradeoff: next-sitemap's postbuild step pulls photo URLs from
-      # Firestore, and against a placeholder project that call is denied. It
-      # catches the failure and emits a sitemap with no photo URLs, so this job
-      # will not catch a regression in that query. Vercel's build, which has
-      # the real values, is what produces the published sitemap.
+      # and throws auth/invalid-api-key when the key is missing, and the
+      # app/sitemap.ts route reads the real `photos` collection during the
+      # build — a denied read fails the build instead of publishing an empty
+      # sitemap. So this job needs the real values. They are NEXT_PUBLIC_
+      # values that ship to every visitor's browser anyway, so committing
+      # them buys no new exposure.
       - name: Build
         run: npm run build
         env:
-          NEXT_PUBLIC_FIREBASE_API_KEY: ci-placeholder-key
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ci.firebaseapp.com
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ci-placeholder
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ci-placeholder.appspot.com
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '000000000000'
-          NEXT_PUBLIC_FIREBASE_APP_ID: '1:000000000000:web:0000000000000000000000'
-          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: G-CIPLACEHOLD
+          NEXT_PUBLIC_FIREBASE_API_KEY: AIzaSyDxAS1-UAtj7Rv42-pUsWFbUOG8UkjqHtg
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: photography-website-e62a9.firebaseapp.com
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: photography-website-e62a9
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: photography-website-e62a9.appspot.com
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '984875779918'
+          NEXT_PUBLIC_FIREBASE_APP_ID: '1:984875779918:web:63ef0c6485b3e31d4d401f'
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: G-G4SQVX634K
