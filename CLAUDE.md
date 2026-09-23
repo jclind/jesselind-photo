@@ -13,13 +13,15 @@ There is no test suite configured.
 
 ## Environment
 
-Firebase config is read from `NEXT_PUBLIC_FIREBASE_*` vars in `.env` (apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId, measurementId). The admin password gate reads `NEXT_PUBLIC_ADMIN_PASS`. All are exposed to the client — the admin gate is a soft barrier, not real auth.
+Firebase config is read from `NEXT_PUBLIC_FIREBASE_*` vars (apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId, measurementId), set in Vercel's environment config. There is no local `.env`; local builds need the vars exported in the shell (see Things to know). All of them ship to the client by design.
+
+Admin access is Firebase Auth email/password plus a custom-claims check, not a site password (see Admin).
 
 TypeScript path alias `@/*` resolves to the project root (see `tsconfig.json`).
 
 ## Architecture
 
-Next.js 15 App Router + React 19 photography portfolio backed by Firebase (Firestore for metadata, Storage for image binaries). Photo metadata is dynamic; collection/project listings are static.
+Next.js 16 App Router + React 19 photography portfolio backed by Firebase (Firestore for metadata, Storage for image binaries). Photo metadata is dynamic; collection/project listings are static.
 
 ### Data model
 
@@ -42,7 +44,7 @@ When adding a new gallery surface: write a client component that builds a Firest
 
 ### Admin
 
-`/admin/*` routes wrap their children in `components/AdminGate`, a client-side password prompt with 1-hour localStorage expiry. Routes:
+`/admin/*` routes wrap their children in `components/AdminGate`, a Firebase Auth email/password gate. `onAuthStateChanged` drives the gate and `getIdTokenResult(true)` checks the `admin === true` custom claim, force-refreshing the token so a freshly granted claim applies without a re-login (`AdminGate.tsx:26-38`). AdminGate is UX only; the real boundary is the Firestore security rules plus that claim. Routes:
 
 - `/admin/add-photo` — multi-file upload form; reads image dimensions client-side, uploads original + compressed thumbnail to Storage, and writes Firestore docs inside a single transaction that also bumps `counters/photos`.
 - `/admin/settings` — currently only exposes "Re-serialize Image Database" (calls `reSerializePhotos`).
@@ -57,6 +59,6 @@ SCSS modules co-located with components (`*.module.scss`). Globals in `app/globa
 - Several Firestore queries combine `where` + `orderBy` and require composite indexes; if a new filter is added, expect to create an index in the Firebase console.
 - Photo navigation in `usePhotoCollection` loads the entire filtered list on each viewer load (no pagination) — fine at current scale but worth knowing before adding heavy per-photo work.
 - `next-sitemap.config.js` hardcodes the production URL `https://jesselindphoto.vercel.app`.
-- ESLint is pinned to 9.x. ESLint 10 removed `context.getFilename()`, which `eslint-plugin-react` 7.x (a transitive dep of `eslint-config-next`) still calls, so every file throws on lint. Revisit once that plugin ships a v10-compatible release.
-- `npm run lint` currently exits 1 on pre-existing `react-hooks` v7 errors. See `todo.md` for the list.
+- There is no local `.env`, and `next build` prerenders `/admin`, which calls `getAuth()` at module scope and throws without an API key. Local builds need the placeholder `NEXT_PUBLIC_FIREBASE_*` values from `.github/workflows/ci.yml` exported in the shell. Those same placeholders make next-sitemap's postbuild emit an empty sitemap, so run `git checkout -- public/` after a local build to restore the committed sitemap files.
+- ESLint is held at 9.x deliberately. ESLint 9 is EOL upstream (since 2026-08-06, no security patches), but 10 is blocked by `eslint-plugin-react` (a transitive dep of `eslint-config-next`): it still calls the removed `context.getFilename()` and has shipped no compatible release (jsx-eslint#3977). The rest of the lint stack (typescript-eslint, eslint-plugin-react-hooks) already supports 10. Revisit quarterly; don't bump ESLint ad hoc.
 - `AGENTS.md` exists to host the agent-rules block that `next dev` injects when it detects an AI agent. Next writes to `AGENTS.md` in preference to `CLAUDE.md`, so keeping it there leaves this file hand-maintained. Don't delete it, or the block lands here instead. `agentRules: false` in `next.config.ts` turns the whole thing off.
