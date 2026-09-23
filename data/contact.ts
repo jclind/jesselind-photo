@@ -1,6 +1,8 @@
+import { siteUrl } from '@/lib/siteUrl'
+
 export const EMAIL = 'jesselindphoto@gmail.com'
 export const PERSONAL_WEBSITE = 'jesselind.com'
-export const PHOTO_WEBSITE_URL = 'https://jesselindphoto.vercel.app' // * CHANGE next-sitemap.config.js url
+export const PHOTO_WEBSITE_URL = siteUrl
 export const CONTACT_LINKS = [
   {
     label: 'Email',

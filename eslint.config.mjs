@@ -3,7 +3,7 @@ import nextTypescript from 'eslint-config-next/typescript'
 
 const config = [
   {
-    ignores: ['.next/**', 'out/**', 'next-env.d.ts', 'next-sitemap.config.js'],
+    ignores: ['.next/**', 'out/**', 'next-env.d.ts'],
   },
   ...nextCoreWebVitals,
   ...nextTypescript,
