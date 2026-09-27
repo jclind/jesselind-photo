@@ -40,6 +40,17 @@ export const projects: ProjectType[] = [
     thumbnailUrl: '/images/projects/japan-2025-thumbnail.webp',
     mobilePosterUrl: '/images/projects/japan-2025-poster-mobile.webp',
   },
+  {
+    id: 'vietnam-2026',
+    name: 'Vietnam 2026',
+    date: '07-13-2026',
+    endDate: '07-31-2026',
+    description:
+      "Spontaneous three week trip through Vietnam, planned with about a week's notice with two friends. Explored the cities of Saigon and Hanoi and the countryside of Ninh Binh. We also embarked on a four day motorcycle ride through the northern mountains of the Ha Giang Loop. Shot on Fujifilm X-T4",
+    posterUrl: '/images/projects/vietnam-2026-poster.webp',
+    thumbnailUrl: '/images/projects/vietnam-2026-thumbnail.webp',
+    mobilePosterUrl: '/images/projects/vietnam-2026-poster-mobile.webp',
+  },
 ].sort((a, b) => {
   const dateA = new Date(a.date)
   const dateB = new Date(b.date)
