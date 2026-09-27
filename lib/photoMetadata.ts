@@ -6,7 +6,11 @@ const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 const formatDate = (photo: Photo): string | null => {
   const date = photo.photoDate?.toDate?.()
   if (!date) return null
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  })
 }
 
 const buildTitle = (photo: Photo | null, photoID: string): string => {
