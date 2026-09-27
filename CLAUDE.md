@@ -47,7 +47,7 @@ When adding a new gallery surface: write a client component that builds a Firest
 
 `/admin/*` routes wrap their children in `components/AdminGate`, a Firebase Auth email/password gate. `onAuthStateChanged` drives the gate and `getIdTokenResult(true)` checks the `admin === true` custom claim, force-refreshing the token so a freshly granted claim applies without a re-login (`AdminGate.tsx:26-38`). AdminGate is UX only; the real boundary is the Firestore security rules plus that claim. Routes:
 
-- `/admin/add-photo` — multi-file upload form built on `util/uploadPhotos.ts`. Photos upload one at a time in order: original, thumbnail and blur placeholder go to Storage first, then a short per-photo transaction assigns the next `sequenceNumber`/`id` and bumps `counters/photos`. Failed photos stay selected for retry and reuse their doc key.
+- `/admin/add-photo` — batch upload page. Reads each file's EXIF capture time (`exifr`, lazy-loaded; `app/admin/add-photo/captureTime.ts`), groups the grid by day, and applies location/category/date to selected photos. Upload goes through `util/uploadPhotos.ts`, one photo at a time in capture order: original, thumbnail and blur placeholder go to Storage first, then a short per-photo transaction assigns the next `sequenceNumber`/`id` and bumps `counters/photos`. A run stops at the first failure so resumed photos keep capture order, and a failed photo reuses its doc key. Photos already in the chosen project (same capture second and filename) are skipped.
 - `/admin/settings` — currently only exposes "Re-serialize Image Database" (calls `reSerializePhotos`).
 
 ### Styling
@@ -56,6 +56,7 @@ SCSS modules co-located with components (`*.module.scss`). Globals in `app/globa
 
 ## Things to know
 
+- `photoDate` stores the camera's wall-clock time in the Timestamp's UTC fields (14:32 in Hanoi is saved as 14:32Z), and every display formats it with `timeZone: 'UTC'`. Photos uploaded before the batch page are at UTC midnight. Never format `photoDate` in local time or parse it with the local-time `Date` constructor, or dates shift by a day for visitors west of UTC.
 - `getPhotoID` zero-pads to 5 digits — keep sequenceNumber and id in sync; reSerialize is the only tool that fixes drift.
 - Several Firestore queries combine `where` + `orderBy` and require composite indexes; if a new filter is added, expect to create an index in the Firebase console.
 - The production URL lives in one place, `lib/siteUrl.ts` (override with `NEXT_PUBLIC_SITE_URL`); the sitemap, robots, and contact data all read it.

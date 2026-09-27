@@ -1,84 +1,492 @@
 @use '@/styles/vars' as *;
 
+$danger: #b00020;
+
 .AddPhoto {
   .content {
-    max-width: 80%;
-    width: 600px;
-    margin: $gap-2xl auto;
+    max-width: $max-width-container;
+    width: $max-width-percentage;
+    margin: $gap-2xl auto 0;
+    padding-bottom: $gap-medium;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-regular;
+  }
 
-    input,
-    textarea,
-    select {
-      padding: $gap-regular;
-      border-radius: 8px;
-      outline: none;
-      border: 1px solid $border-color;
+  .pageTitle {
+    font-size: $fs-large;
+    font-weight: 600;
+  }
+}
+
+.dropZone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $gap-xs;
+  width: 100%;
+  padding: $gap-medium;
+  border: 2px dashed #aaa;
+  border-radius: $border-radius;
+  background: $card-background;
+  color: $secondary-text;
+  font-size: $fs-small;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+
+  svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  &:hover:enabled,
+  &.dropZoneActive {
+    border-color: $primary-text;
+    color: $primary-text;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+}
+
+.dropZoneHint {
+  font-size: $fs-xs;
+  color: $tertiary-text;
+}
+
+.rejectedList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  color: $danger;
+  font-size: $fs-xs;
+  overflow-wrap: anywhere;
+}
+
+.layout {
+  display: flex;
+  gap: $gap-regular;
+  align-items: flex-start;
+}
+
+.gridSection {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $gap-regular;
+}
+
+.gridToolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: $gap-small;
+  flex-wrap: wrap;
+}
+
+.gridCount {
+  font-size: $fs-xs;
+  color: $secondary-text;
+}
+
+.gridToolbarButtons {
+  display: flex;
+  gap: $gap-xs;
+}
+
+.smallButton {
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  background: $primary-background;
+  padding: 4px 10px;
+  font-size: $fs-xs;
+  color: $primary-text;
+  cursor: pointer;
+
+  &:hover:enabled {
+    background: $secondary-background;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.dayGroup {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-xs;
+}
+
+.dayHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: $gap-small;
+  flex-wrap: wrap;
+  padding-bottom: 4px;
+  border-bottom: 1px solid $border-color;
+}
+
+.dayTitle {
+  font-size: $fs-small;
+  font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dayCount {
+  margin-left: $gap-xs;
+  font-size: $fs-xs;
+  font-weight: 400;
+  color: $secondary-text;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: $gap-small;
+  list-style: none;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cellFrame {
+  position: relative;
+}
+
+.tile {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  overflow: hidden;
+  background: $secondary-background;
+  cursor: pointer;
+
+  img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+  }
+
+  .tilePlaceholder {
+    width: 100%;
+    aspect-ratio: 1;
+  }
+
+  &:hover:enabled {
+    border-color: $secondary-border-color;
+  }
+
+  &.tileSelected {
+    border-color: $primary-accent;
+    box-shadow: 0 0 0 3px $primary-accent;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+.removeButton {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: white;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.8);
+  }
+}
+
+.badge {
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: $fs-xxs;
+  overflow-wrap: anywhere;
+
+  a {
+    color: inherit;
+    font-weight: 600;
+  }
+}
+
+.badgeMuted {
+  background: $secondary-background;
+  color: $secondary-text;
+}
+
+.badgeWarn {
+  background: #fff4ce;
+  color: #7a5900;
+}
+
+.badgeActive {
+  background: #e8effc;
+  color: $primary-accent;
+}
+
+.badgeDone {
+  background: #e6f4ea;
+  color: #137333;
+
+  a {
+    text-decoration: underline;
+  }
+}
+
+.badgeFail {
+  background: #fce8e6;
+  color: $danger;
+}
+
+.cellMeta {
+  font-size: $fs-xxs;
+  color: $secondary-text;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel {
+  width: 300px;
+  flex-shrink: 0;
+  position: sticky;
+  top: $gap-medium;
+  display: flex;
+  flex-direction: column;
+  gap: $gap-small;
+  padding: $gap-regular;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  background: $card-background;
+}
+
+.panelTitle {
+  font-size: $fs-small;
+  font-weight: 600;
+}
+
+.panelHint {
+  font-size: $fs-xs;
+  color: $secondary-text;
+}
+
+.panelNote {
+  font-size: $fs-xxs;
+  color: $tertiary-text;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fieldLabel {
+  font-size: $fs-xs;
+  color: $secondary-text;
+}
+
+.fieldRow {
+  display: flex;
+  gap: $gap-xs;
+
+  > * {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.panel,
+.projectField {
+  input,
+  select,
+  textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid $border-color;
+    border-radius: 8px;
+    font-size: $fs-small;
+    font-family: inherit;
+    background: $primary-background;
+    color: $primary-text;
+
+    &:disabled {
+      background: $secondary-background;
     }
-    button {
-      border: 1px solid $border-color;
-      margin: 0 auto;
-      margin-top: $gap-regular;
-      width: fit-content;
-      padding: 16px 24px;
-      border-radius: 16px;
-    }
+  }
 
-    .fileInputLabel {
-      display: block;
-      width: 100%;
-      padding: 1rem;
-      border: 2px dashed #aaa;
-      border-radius: 8px;
-      text-align: center;
-      color: #666;
-      font-weight: 600;
-      cursor: pointer;
-      transition: border-color 0.3s ease, color 0.3s ease;
-      user-select: none;
+  textarea {
+    resize: vertical;
+    min-height: 60px;
+  }
+}
 
-      &:hover {
-        border-color: #333;
-        color: #000;
-      }
+.applyButton {
+  border: 1px solid $primary-text;
+  border-radius: 16px;
+  background: $primary-text;
+  color: white;
+  padding: 10px 16px;
+  font-size: $fs-small;
+  cursor: pointer;
 
-      input[type='file'] {
-        display: none;
-      }
-    }
+  &:hover:enabled {
+    background: #333;
+    border-color: #333;
+  }
 
-    label[for] {
-      font-size: $fs-xs;
-      color: $secondary-text;
-    }
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
 
-    .fieldError {
-      color: #b00020;
-      font-size: $fs-xs;
-      min-height: 0;
+.fieldError {
+  color: $danger;
+  font-size: $fs-xs;
+}
 
-      &:empty {
-        display: none;
-      }
-    }
+.uploadBar {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: $gap-small;
+  padding: $gap-regular;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  background: $primary-background;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+}
 
-    .formError {
-      color: #b00020;
-      font-size: $fs-xs;
-      text-align: center;
+.projectField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 320px;
+}
 
-      &:empty {
-        display: none;
-      }
-    }
+.blockMessage {
+  color: $danger;
+  font-size: $fs-xs;
+}
 
-    .formSuccess {
-      color: $secondary-text;
-      font-size: $fs-xs;
-      text-align: center;
+.orderCheckNote {
+  color: $secondary-text;
+  font-size: $fs-xs;
+}
 
-      &:empty {
-        display: none;
-      }
-    }
+.noProjectNote {
+  color: $secondary-text;
+  font-size: $fs-xs;
+}
+
+.failMessage {
+  color: $danger;
+  font-size: $fs-small;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.outOfOrder {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-xs;
+  padding: $gap-small;
+  border: 1px solid #e3d18a;
+  border-radius: 8px;
+  background: #fff8e1;
+  color: #6b5200;
+  font-size: $fs-xs;
+
+  p {
+    margin: 0;
+  }
+}
+
+.ackLabel {
+  display: flex;
+  align-items: center;
+  gap: $gap-xs;
+}
+
+.uploadActions {
+  display: flex;
+  gap: $gap-small;
+  flex-wrap: wrap;
+}
+
+.button {
+  border: 1px solid $border-color;
+  border-radius: 16px;
+  background: $primary-background;
+  padding: 10px 20px;
+  font-size: $fs-small;
+  cursor: pointer;
+
+  &:hover:enabled {
+    background: $secondary-background;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.primaryButton {
+  background: $primary-text;
+  border-color: $primary-text;
+  color: white;
+
+  &:hover:enabled {
+    background: #333;
+    border-color: #333;
+  }
+}
+
+.summary {
+  font-size: $fs-xs;
+  color: $secondary-text;
+}
+
+@media (max-width: $breakpoint-md) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .panel {
+    width: 100%;
+    position: static;
   }
 }

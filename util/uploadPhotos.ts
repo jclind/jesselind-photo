@@ -11,6 +11,8 @@ import {
   DocumentSnapshot,
   getDoc,
   getDocs,
+  limit,
+  orderBy,
   query,
   runTransaction,
   serverTimestamp,
@@ -252,6 +254,15 @@ export async function fetchProjectUploads(
       seconds: photo.photoDate.seconds,
       safeName: safeNameFromStoragePath(photo.storagePath),
     }))
+}
+
+// Newest photoDate on the site, for the add-photo page's out-of-order check.
+export async function fetchNewestPhotoDate(): Promise<Date | null> {
+  const snapshot = await getDocs(
+    query(collection(db, 'photos'), orderBy('photoDate', 'desc'), limit(1))
+  )
+  const photo = snapshot.docs[0]?.data() as Photo | undefined
+  return photo?.photoDate ? photo.photoDate.toDate() : null
 }
 
 // New-flow object names are `<20-char doc key>-<safeName>`; any other shape
