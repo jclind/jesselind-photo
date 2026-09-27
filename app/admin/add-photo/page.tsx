@@ -35,6 +35,7 @@ export default function AddPhoto() {
   // Mirrors previewUrls so the unmount cleanup can revoke the last batch
   // without re-running every time the selection changes.
   const previewUrlsRef = useRef<string[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Object URLs are created alongside the selection rather than derived from it
   // in an effect, so every URL has exactly one revoke.
@@ -73,6 +74,8 @@ export default function AddPhoto() {
       reader.onload = e => {
         if (e.target?.result) {
           img.src = e.target.result as string
+        } else {
+          reject(new Error('File read returned no data'))
         }
       }
       reader.onerror = reject
@@ -98,12 +101,12 @@ export default function AddPhoto() {
 
     setLoading(true)
 
-    // Lazy-load the compression lib so its ~50 KB doesn't ship on page mount
-    const { default: imageCompression } = await import(
-      'browser-image-compression'
-    )
-
     try {
+      // Lazy-load the compression lib so its ~50 KB doesn't ship on page mount
+      const { default: imageCompression } = await import(
+        'browser-image-compression'
+      )
+
       const counterRef = doc(db, 'counters', 'photos')
 
       await runTransaction(db, async transaction => {
@@ -178,6 +181,7 @@ export default function AddPhoto() {
       })
       // Reset form
       selectFiles([])
+      if (fileInputRef.current) fileInputRef.current.value = ''
       setTitle('')
       setCategory('')
       setDescription('')
@@ -237,6 +241,7 @@ export default function AddPhoto() {
                 'Choose images...'
               )}
               <input
+                ref={fileInputRef}
                 type='file'
                 accept={ALLOWED_TYPES.join(',')}
                 multiple
