@@ -29,6 +29,7 @@ Next.js 16 App Router + React 19 photography portfolio backed by Firebase (Fires
 - **Firestore `counters/photos`** — single doc holding `lastSequenceNumber`. The admin upload flow uses a `runTransaction` to increment this and assign IDs atomically. `util/reSerializePhotos.ts` rebuilds ids/sequence numbers by re-sorting all photos by `photoDate` ascending and updating the counter — invoked from `/admin/settings`.
 - **Storage paths** — `full/<filename>` and `thumbnails/<filename>` (thumbnail compressed to maxWidthOrHeight 500 via `browser-image-compression`).
 - **Static taxonomies** — `data/categories.ts` (collections) and `data/projects.ts` (projects, sorted newest-first) are hand-edited TS arrays. The photo's `category` / `projectID` fields are the join keys.
+- **Project images** — each project in `data/projects.ts` points at three files in `public/images/projects/`, all square WebP with the same crop: `<id>-poster.webp` at 2000×2000, `<id>-poster-mobile.webp` at 1000×1000, and `<id>-thumbnail.webp` at 500×500. They must be square because both project pages set `aspect-ratio: 1` on the image box. The thumbnail is only the `blurDataURL` placeholder, so don't go above 500. The poster doubles as the project page's Open Graph image.
 
 ### Routing & gallery pattern
 
