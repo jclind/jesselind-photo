@@ -1,21 +1,12 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import {
-  collection,
-  serverTimestamp,
-  runTransaction,
-  doc,
-} from 'firebase/firestore/lite'
 import styles from './page.module.scss'
-import { db, storage } from '@/lib/firebase'
 import { categories, CollectionType } from '@/data/categories'
 import { projects, ProjectType } from '@/data/projects'
 import AdminNav from '../AdminNav'
 import AdminGate from '@/components/AdminGate'
-import { getPhotoID } from '@/util/reSerializePhotos'
-import { generateBlurPlaceholder } from '@/util/generateBlurPlaceholder'
+import { uploadPhoto } from '@/util/uploadPhotos'
 
 const MAX_FILE_MB = 20
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
@@ -36,6 +27,9 @@ export default function AddPhoto() {
   // without re-running every time the selection changes.
   const previewUrlsRef = useRef<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // A failed photo keeps its doc key, so resubmitting it can't create a second
+  // doc if the first attempt committed without the page seeing it.
+  const retryDocIds = useRef(new WeakMap<File, string>())
 
   // Object URLs are created alongside the selection rather than derived from it
   // in an effect, so every URL has exactly one revoke.
@@ -60,29 +54,6 @@ export default function AddPhoto() {
     []
   )
 
-  async function getImageDimensionsFromFile(
-    file: File
-  ): Promise<{ width: number; height: number }> {
-    return new Promise((resolve, reject) => {
-      const img = new Image()
-      img.onload = () => {
-        resolve({ width: img.naturalWidth, height: img.naturalHeight })
-      }
-      img.onerror = reject
-
-      const reader = new FileReader()
-      reader.onload = e => {
-        if (e.target?.result) {
-          img.src = e.target.result as string
-        } else {
-          reject(new Error('File read returned no data'))
-        }
-      }
-      reader.onerror = reject
-      reader.readAsDataURL(file)
-    })
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setFormStatus(null)
@@ -102,92 +73,57 @@ export default function AddPhoto() {
     setLoading(true)
 
     try {
-      // Lazy-load the compression lib so its ~50 KB doesn't ship on page mount
-      const { default: imageCompression } = await import(
-        'browser-image-compression'
-      )
+      const failedFiles: File[] = []
+      const failures: string[] = []
+      let uploaded = 0
 
-      const counterRef = doc(db, 'counters', 'photos')
-
-      await runTransaction(db, async transaction => {
-        // Get current last sequence number
-        const counterSnap = await transaction.get(counterRef)
-        let lastSequenceNumber = 0
-        if (counterSnap.exists()) {
-          lastSequenceNumber = counterSnap.data().lastSequenceNumber || 0
-        } else {
-          transaction.set(counterRef, { lastSequenceNumber: 0 })
-        }
-
-        for (const file of files) {
-          // Get dimensions
-          const { width, height } = await getImageDimensionsFromFile(file)
-
-          // Assign id up front so the Storage path embeds it. Without this
-          // prefix, two photos sharing a filename (very common with default
-          // camera names like IMG_0001.jpg) would overwrite each other.
-          lastSequenceNumber++
-          const id = getPhotoID(lastSequenceNumber)
-          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-          const storagePath = `full/${id}-${safeName}`
-          const thumbnailPath = `thumbnails/${id}-${safeName}`
-
-          // Upload full image
-          const fullRef = ref(storage, storagePath)
-          await uploadBytes(fullRef, file)
-          const fullUrl = await getDownloadURL(fullRef)
-
-          // Create and upload thumbnail
-          const thumbBlob = await imageCompression(file, {
-            maxWidthOrHeight: 500,
-            useWebWorker: true,
-          })
-          const thumbRef = ref(storage, thumbnailPath)
-          await uploadBytes(thumbRef, thumbBlob)
-          const thumbUrl = await getDownloadURL(thumbRef)
-
-          // Tiny base64 placeholder for <Image placeholder='blur'>
-          const blurDataURL = await generateBlurPlaceholder(thumbBlob)
-
-          // Add photo doc
-          const photoRef = doc(collection(db, 'photos'))
-          transaction.set(photoRef, {
-            id,
+      // Sequential on purpose: awaiting each upload in files order is what
+      // keeps sequenceNumber aligned with the picked order.
+      for (const file of files) {
+        const status = await uploadPhoto(
+          file,
+          {
             title,
             category,
             description,
-            location: location || null,
-            storagePath,
-            thumbnailPath,
-            projectID: projectID || null,
-            fullUrl,
-            thumbnailUrl: thumbUrl,
-            blurDataURL,
-            width,
-            height,
-            createdAt: serverTimestamp(),
+            location,
+            projectID,
             photoDate: createdDate,
-            sequenceNumber: lastSequenceNumber,
-          })
+          },
+          { docId: retryDocIds.current.get(file) }
+        )
+        if (status.state === 'done') {
+          uploaded++
+          retryDocIds.current.delete(file)
+        } else if (status.state === 'failed') {
+          retryDocIds.current.set(file, status.docId)
+          failedFiles.push(file)
+          failures.push(`${file.name} (${status.reason})`)
         }
+      }
 
-        // Update the counter with new last sequence number
-        transaction.update(counterRef, { lastSequenceNumber })
-      })
-
-      setFormStatus({
-        kind: 'success',
-        message: `Uploaded ${files.length} photo${files.length === 1 ? '' : 's'}.`,
-      })
-      // Reset form
-      selectFiles([])
-      if (fileInputRef.current) fileInputRef.current.value = ''
-      setTitle('')
-      setCategory('')
-      setDescription('')
-      setLocation('')
-      setProjectID('')
-      setPhotoDate('')
+      if (failedFiles.length > 0) {
+        // Keep only the failures selected, so a second submit retries those
+        selectFiles(failedFiles)
+        setFormStatus({
+          kind: 'error',
+          message: `Uploaded ${uploaded} of ${files.length}: failed ${failures.join('; ')}.`,
+        })
+      } else {
+        setFormStatus({
+          kind: 'success',
+          message: `Uploaded ${files.length} photo${files.length === 1 ? '' : 's'}.`,
+        })
+        // Reset form
+        selectFiles([])
+        if (fileInputRef.current) fileInputRef.current.value = ''
+        setTitle('')
+        setCategory('')
+        setDescription('')
+        setLocation('')
+        setProjectID('')
+        setPhotoDate('')
+      }
     } catch (error) {
       console.error(error)
       setFormStatus({ kind: 'error', message: 'Error uploading photos.' })
