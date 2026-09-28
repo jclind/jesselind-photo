@@ -63,6 +63,11 @@ const initialState: State = {
   exifPending: 0,
 }
 
+// Batch item keys only need to be unique within this page. Not
+// crypto.randomUUID, which is missing over plain http on a non-localhost
+// host (the dev server reached over the tailnet).
+let nextItemKey = 0
+
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'add':
@@ -480,7 +485,7 @@ export default function AddPhoto() {
       )
       if (duplicate) continue
       accepted.push({
-        key: crypto.randomUUID(),
+        key: `item-${nextItemKey++}`,
         file,
         previewUrl: null,
         captureMs: null,
