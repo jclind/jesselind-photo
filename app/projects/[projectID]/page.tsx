@@ -74,14 +74,16 @@ const ProjectPage = async ({ params }: PageProps) => {
       />
       <div className={styles.header}>
         <div className={styles.imageContainer}>
+          {/* Served as-is, like the posters on /projects: the optimizer's
+              re-encode visibly softens them. */}
           <Image
+            unoptimized
             src={currProject.posterUrl}
             alt=''
             width={2000}
             height={2000}
             priority
             fetchPriority='high'
-            sizes='(max-width: 768px) 92vw, 500px'
             placeholder='blur'
             blurDataURL={currProject.thumbnailUrl}
           />
