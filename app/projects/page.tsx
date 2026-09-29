@@ -31,7 +31,11 @@ const ProjectsPage = () => {
                       media='(max-width: 768px)'
                       srcSet={project.mobilePosterUrl}
                     />
+                    {/* Posters are exported by hand at display size (see CLAUDE.md).
+                        Re-encoding them at the optimizer's quality 75 smears
+                        their grain, so they're served as-is. */}
                     <Image
+                      unoptimized
                       src={project.posterUrl}
                       alt={project.name}
                       width={700}
