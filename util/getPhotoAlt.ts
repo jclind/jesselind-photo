@@ -9,7 +9,7 @@ export const getPhotoAlt = (photo: Photo): string => {
   const subject = photo.category ? `${capitalize(photo.category)} photograph` : 'Photograph'
   const parts: string[] = [`${subject} by Jesse Lind`]
   if (photo.location) parts.push(photo.location)
-  const year = photo.photoDate?.toDate?.().getFullYear()
+  const year = photo.photoDate?.toDate?.().getUTCFullYear()
   if (year) parts.push(String(year))
   return parts.join(', ')
 }

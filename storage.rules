@@ -1,0 +1,42 @@
+// Copy of the Firebase Storage rules as deployed in the Firebase console
+// (2026-09-28). Nothing deploys this file; edit the console, then update it
+// here so reviewers can see what the upload code runs against.
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Same upload checks as before, pulled out so both folders share them.
+    function isValidImage() {
+      return request.resource.size < 25 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+
+    // Delete is allowed only for new-style names (20-char Firestore doc key,
+    // then "-") whose photo doc does not exist. Every existing file on the
+    // site uses an older naming style, so none of them can be deleted.
+    function isOrphanUpload(file) {
+      return file.matches('[A-Za-z0-9]{20}-.+')
+        && !firestore.exists(/databases/(default)/documents/photos/$(file.split('-')[0]));
+    }
+
+    match /full/{file} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidImage();
+      allow delete: if isAdmin() && isOrphanUpload(file);
+    }
+
+    match /thumbnails/{file} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidImage();
+      allow delete: if isAdmin() && isOrphanUpload(file);
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -10,7 +10,12 @@ import {
 import { auth } from '@/lib/firebase'
 import styles from './AdminGate.module.scss'
 
-type AuthStatus = 'loading' | 'unauthenticated' | 'unauthorized' | 'authorized'
+type AuthStatus =
+  | 'loading'
+  | 'unauthenticated'
+  | 'unauthorized'
+  | 'authorized'
+  | 'error'
 
 export const logout = () => {
   signOut(auth)
@@ -23,19 +28,25 @@ const AdminGate = ({ children }: { children: React.ReactNode }) => {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
-      if (!user) {
-        setStatus('unauthenticated')
-        return
-      }
-      // Force-refresh so a freshly-granted custom claim is visible without
-      // requiring the user to sign out and back in.
+  const verifyAdmin = useCallback(async (user: User | null) => {
+    if (!user) {
+      setStatus('unauthenticated')
+      return
+    }
+    // Force-refresh so a freshly-granted custom claim is visible without
+    // requiring the user to sign out and back in.
+    try {
       const token = await user.getIdTokenResult(true)
       setStatus(token.claims.admin === true ? 'authorized' : 'unauthorized')
-    })
-    return unsubscribe
+    } catch {
+      setStatus('error')
+    }
   }, [])
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, verifyAdmin)
+    return unsubscribe
+  }, [verifyAdmin])
 
   const handleLogin = async () => {
     setError(null)
@@ -47,6 +58,10 @@ const AdminGate = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const handleRetry = () => {
+    verifyAdmin(auth.currentUser)
   }
 
   if (status === 'loading') return null
@@ -92,6 +107,13 @@ const AdminGate = ({ children }: { children: React.ReactNode }) => {
           {status === 'unauthorized' && (
             <p>
               This account is not authorized.{' '}
+              <button onClick={logout}>Sign out</button>
+            </p>
+          )}
+          {status === 'error' && (
+            <p>
+              Could not verify admin access.{' '}
+              <button onClick={handleRetry}>Retry</button>{' '}
               <button onClick={logout}>Sign out</button>
             </p>
           )}

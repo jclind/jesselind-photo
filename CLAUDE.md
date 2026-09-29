@@ -27,7 +27,7 @@ Next.js 16 App Router + React 19 photography portfolio backed by Firebase (Fires
 
 - **Firestore `photos` collection** — one doc per photo. Shape in `types/Photo.ts`. Key fields: `id` (zero-padded sequence, see `getPhotoID`), `sequenceNumber` (global ordering), `category`, `projectID`, `width`/`height`, `fullUrl`, `thumbnailUrl`, `photoDate` (Timestamp).
 - **Firestore `counters/photos`** — single doc holding `lastSequenceNumber`. The admin upload flow uses a `runTransaction` to increment this and assign IDs atomically. `util/reSerializePhotos.ts` rebuilds ids/sequence numbers by re-sorting all photos by `photoDate` ascending and updating the counter — invoked from `/admin/settings`.
-- **Storage paths** — `full/<filename>` and `thumbnails/<filename>` (thumbnail compressed to maxWidthOrHeight 500 via `browser-image-compression`).
+- **Storage paths** — `full/<docKey>-<safeName>` and `thumbnails/<docKey>-<safeName>`, where `docKey` is the photo's Firestore document key (not its `id` field). Photos uploaded before this format use `<sequenceId>-<name>` or older names; nothing rewrites them. Thumbnails are compressed to maxWidthOrHeight 500 via `browser-image-compression`. Storage rules allow a delete only for a new-format object whose photo doc doesn't exist, and `util/uploadPhotos.ts` is the only code that deletes.
 - **Static taxonomies** — `data/categories.ts` (collections) and `data/projects.ts` (projects, sorted newest-first) are hand-edited TS arrays. The photo's `category` / `projectID` fields are the join keys.
 - **Project images** — each project in `data/projects.ts` points at three files in `public/images/projects/`, all square WebP with the same crop: `<id>-poster.webp` at 2000×2000, `<id>-poster-mobile.webp` at 1000×1000, and `<id>-thumbnail.webp` at 500×500. They must be square because both project pages set `aspect-ratio: 1` on the image box. The thumbnail is only the `blurDataURL` placeholder, so don't go above 500. The poster doubles as the project page's Open Graph image.
 
@@ -39,7 +39,7 @@ All gallery pages share `components/GalleryTemplate`, which is a client componen
 - `/collections/[collectionID]` — filtered by `where('category', '==', collectionID)`, ordered by `sequenceNumber` desc.
 - `/projects/[projectID]` — filtered by `where('projectID', '==', projectID)`, ordered by `sequenceNumber` **asc** (projects display chronologically).
 
-Each gallery has a nested `[photoID]` route that renders `components/PhotoViewer`. The viewer uses `hooks/usePhotoCollection` to fetch the full ordered photo list (with the same optional filter), find prev/next neighbors, and wrap around at the ends. `store/photoStore.ts` is a Zustand cache that preloads adjacent full-size images so navigation is instant — when adding new viewer features, prefer reading from this store before re-fetching.
+Each gallery has a nested `[photoID]` route that renders `components/PhotoViewer`. The viewer uses `hooks/usePhotoCollection` to fetch the photo by `id`, then each neighbor with a `limit(1)` query on `sequenceNumber` (same optional filter), wrapping around at the ends. `store/photoStore.ts` is a Zustand cache that preloads adjacent full-size images so navigation is instant — when adding new viewer features, prefer reading from this store before re-fetching.
 
 When adding a new gallery surface: write a client component that builds a Firestore query matching the desired filter/ordering, pass it as `fetchPhotos` to `GalleryTemplate`, and supply a parallel `[photoID]` route that renders `PhotoViewer` with the matching `filter` so prev/next stays scoped.
 
@@ -47,7 +47,7 @@ When adding a new gallery surface: write a client component that builds a Firest
 
 `/admin/*` routes wrap their children in `components/AdminGate`, a Firebase Auth email/password gate. `onAuthStateChanged` drives the gate and `getIdTokenResult(true)` checks the `admin === true` custom claim, force-refreshing the token so a freshly granted claim applies without a re-login (`AdminGate.tsx:26-38`). AdminGate is UX only; the real boundary is the Firestore security rules plus that claim. Routes:
 
-- `/admin/add-photo` — multi-file upload form; reads image dimensions client-side, uploads original + compressed thumbnail to Storage, and writes Firestore docs inside a single transaction that also bumps `counters/photos`.
+- `/admin/add-photo` — batch upload page. Reads each file's EXIF capture time (`exifr`, lazy-loaded; `app/admin/add-photo/captureTime.ts`), groups the grid by day, and applies location/category/date to selected photos. Upload goes through `util/uploadPhotos.ts`, one photo at a time in capture order: original, thumbnail and blur placeholder go to Storage first, then a short per-photo transaction assigns the next `sequenceNumber`/`id` and bumps `counters/photos`. A run stops at the first failure so resumed photos keep capture order, and a failed photo reuses its doc key. Photos already in the chosen project (same capture second and filename) are skipped.
 - `/admin/settings` — currently only exposes "Re-serialize Image Database" (calls `reSerializePhotos`).
 
 ### Styling
@@ -56,9 +56,9 @@ SCSS modules co-located with components (`*.module.scss`). Globals in `app/globa
 
 ## Things to know
 
+- `photoDate` stores the camera's wall-clock time in the Timestamp's UTC fields (14:32 in Hanoi is saved as 14:32Z), and every display formats it with `timeZone: 'UTC'`. Photos uploaded before the batch page are at UTC midnight. Never format `photoDate` in local time or parse it with the local-time `Date` constructor, or dates shift by a day for visitors west of UTC.
 - `getPhotoID` zero-pads to 5 digits — keep sequenceNumber and id in sync; reSerialize is the only tool that fixes drift.
 - Several Firestore queries combine `where` + `orderBy` and require composite indexes; if a new filter is added, expect to create an index in the Firebase console.
-- Photo navigation in `usePhotoCollection` loads the entire filtered list on each viewer load (no pagination) — fine at current scale but worth knowing before adding heavy per-photo work.
 - The production URL lives in one place, `lib/siteUrl.ts` (override with `NEXT_PUBLIC_SITE_URL`); the sitemap, robots, and contact data all read it.
 - There is no local `.env`, and `next build` needs working Firebase values twice over: the `/admin` prerender calls `getAuth()` at module scope, and `app/sitemap.ts` reads the `photos` collection, where a denied read fails the build. The real public values live in `.github/workflows/ci.yml`; export them in the shell for local builds.
 - ESLint is held at 9.x deliberately. ESLint 9 is EOL upstream (since 2026-08-06, no security patches), but 10 is blocked by `eslint-plugin-react` (a transitive dep of `eslint-config-next`): it still calls the removed `context.getFilename()` and has shipped no compatible release (jsx-eslint#3977). The rest of the lint stack (typescript-eslint, eslint-plugin-react-hooks) already supports 10. Revisit quarterly; don't bump ESLint ad hoc.
