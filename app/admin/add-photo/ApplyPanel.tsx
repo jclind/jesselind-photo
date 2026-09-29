@@ -144,7 +144,7 @@ export default function ApplyPanel({
   const apply = () => {
     setError(null)
     const patch: ApplyPatch = {}
-    if (dirty.location) patch.location = location
+    if (dirty.location) patch.location = location.trim()
     if (dirty.category) patch.category = category
     if (dirty.title) patch.title = title
     if (dirty.description) patch.description = description

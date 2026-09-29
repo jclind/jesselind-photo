@@ -16,6 +16,9 @@ export type BatchItem = {
   // Matches an existing upload in the chosen project, so it is excluded
   alreadyUploaded: boolean
   status: ItemStatus
+  // docId of the last failed attempt, kept apart from status so a later run
+  // that resets status cannot lose it. Cleared once the photo is done.
+  retryDocId: string | null
 }
 
 export type ItemStatus = { state: 'ready' } | PhotoUploadStatus

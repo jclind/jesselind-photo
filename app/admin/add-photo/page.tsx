@@ -20,6 +20,7 @@ import { generatePreviewUrl } from './previews'
 import {
   fetchNewestPhotoDate,
   fetchProjectUploads,
+  sanitizeFileName,
   uploadPhoto,
   PhotoUploadStatus,
   ProjectUpload,
@@ -162,13 +163,24 @@ function reducer(state: State, action: Action): State {
         ),
       }
     }
-    case 'setStatus':
+    // retryDocId follows the outcome: a failure with a docId records it for
+    // the next attempt, and done clears it.
+    case 'setStatus': {
+      const { status } = action
       return {
         ...state,
-        items: state.items.map(item =>
-          item.key === action.key ? { ...item, status: action.status } : item
-        ),
+        items: state.items.map(item => {
+          if (item.key !== action.key) return item
+          const retryDocId =
+            status.state === 'failed' && status.docId
+              ? status.docId
+              : status.state === 'done'
+                ? null
+                : item.retryDocId
+          return { ...item, status, retryDocId }
+        }),
       }
+    }
     // An aborted run must leave the photos it never reached in their prior
     // state, so anything it had marked queued goes back to ready.
     case 'resetQueued':
@@ -191,7 +203,7 @@ function reducer(state: State, action: Action): State {
 // sanitized filename both match (same rule as the upload engine).
 function matchesUpload(item: BatchItem, uploads: ProjectUpload[]): boolean {
   if (item.captureMs == null) return false
-  const safeName = item.file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const safeName = sanitizeFileName(item.file.name)
   const seconds = Math.floor(item.captureMs / 1000)
   return uploads.some(
     upload => upload.seconds === seconds && upload.safeName === safeName
@@ -245,9 +257,17 @@ export default function AddPhoto() {
   const [state, dispatch] = useReducer(reducer, initialState)
   const [acknowledged, setAcknowledged] = useState(false)
   const [newest, setNewest] = useState<{
-    state: 'idle' | 'done' | 'error'
+    state: 'idle' | 'loading' | 'done' | 'error'
     value: Date | null
   }>({ state: 'idle', value: null })
+  // The duplicate check's last result, keyed to the project and batch it ran
+  // for. A result for any other project or batch counts as still loading.
+  const [dupCheck, setDupCheck] = useState<{
+    state: 'loading' | 'done' | 'error'
+    projectID: string
+    batchKey: string
+  } | null>(null)
+  const [dupRetry, setDupRetry] = useState(0)
   const [progress, setProgress] = useState<{
     processed: number
     total: number
@@ -376,11 +396,31 @@ export default function AddPhoto() {
       : null
   }, [newest, queue])
 
+  // Re-check duplicates whenever the project or the batch changes, once EXIF
+  // parsing has settled (capture seconds are part of the match)
+  const itemsKey = useMemo(
+    () => state.items.map(item => `${item.key}:${item.captureMs ?? '-'}`).join('|'),
+    [state.items]
+  )
+  const dupState = !state.projectID
+    ? 'not-needed'
+    : dupCheck &&
+        dupCheck.projectID === state.projectID &&
+        dupCheck.batchKey === itemsKey
+      ? dupCheck.state
+      : 'loading'
+  // Idle counts as loading: the first fetch starts as soon as any photo has
+  // a date, and the queue is empty until then.
+  const orderLoading = newest.state === 'idle' || newest.state === 'loading'
+  const orderCheckFailed = newest.state === 'error'
+
   const canUpload =
     !state.uploading &&
     queue.length > 0 &&
     needsDateCount === 0 &&
-    (!outOfOrder || acknowledged)
+    (dupState === 'not-needed' || dupState === 'done') &&
+    !orderLoading &&
+    (!(outOfOrder || orderCheckFailed) || acknowledged)
 
   const blockedMessage =
     needsDateCount > 0
@@ -392,6 +432,14 @@ export default function AddPhoto() {
           needsDateCount === 1 ? 'it' : 'them'
         }.`
       : null
+  const checkingMessage =
+    state.uploading || queue.length === 0 || blockedMessage
+      ? null
+      : dupState === 'loading'
+        ? 'Checking for photos already in this project…'
+        : orderLoading
+          ? 'Checking date order…'
+          : null
 
   // Fetch the site's newest photoDate for the out-of-order warning: once per
   // batch when the first EXIF date lands, and again after every upload run
@@ -414,12 +462,6 @@ export default function AddPhoto() {
     refreshNewest()
   }, [hasDated, refreshNewest])
 
-  // Re-check duplicates whenever the project or the batch changes, once EXIF
-  // parsing has settled (capture seconds are part of the match)
-  const itemsKey = useMemo(
-    () => state.items.map(item => `${item.key}:${item.captureMs ?? '-'}`).join('|'),
-    [state.items]
-  )
   const exifSettled = state.exifPending === 0
   useEffect(() => {
     if (state.items.length === 0 || !exifSettled) return
@@ -427,18 +469,32 @@ export default function AddPhoto() {
       dispatch({ type: 'duplicates', uploads: [] })
       return
     }
+    const projectID = state.projectID
+    const batchKey = itemsKey
     let cancelled = false
-    fetchProjectUploads(state.projectID)
+    fetchProjectUploads(projectID)
       .then(uploads => {
-        if (!cancelled) dispatch({ type: 'duplicates', uploads })
+        if (cancelled) return
+        dispatch({ type: 'duplicates', uploads })
+        setDupCheck({ state: 'done', projectID, batchKey })
       })
-      .catch(err =>
+      .catch(err => {
         console.error('Could not check existing project uploads:', err)
-      )
+        if (!cancelled) setDupCheck({ state: 'error', projectID, batchKey })
+      })
     return () => {
       cancelled = true
     }
-  }, [state.items.length, state.projectID, itemsKey, exifSettled])
+  }, [state.items.length, state.projectID, itemsKey, exifSettled, dupRetry])
+
+  const retryDuplicateCheck = () => {
+    setDupCheck({
+      state: 'loading',
+      projectID: state.projectID,
+      batchKey: itemsKey,
+    })
+    setDupRetry(n => n + 1)
+  }
 
   // One preview at a time, because each job decodes a full camera file and
   // a large batch of those at once would exhaust memory. A generation
@@ -495,6 +551,7 @@ export default function AddPhoto() {
         description: '',
         alreadyUploaded: false,
         status: { state: 'ready' },
+        retryDocId: null,
       })
     }
     if (accepted.length === 0 && rejected.length === 0) return
@@ -552,10 +609,9 @@ export default function AddPhoto() {
         status: { state: 'uploading' },
       })
       // A failed photo reuses its docId so a retry lands on the same
-      // Storage objects. The invalid-date path stores an empty one, which
-      // must not be passed back.
-      const docId =
-        (item.status.state === 'failed' && item.status.docId) || undefined
+      // Storage objects. It comes from retryDocId, which survives the status
+      // resets of later runs.
+      const docId = item.retryDocId ?? undefined
       let status: PhotoUploadStatus
       try {
         status = await uploadPhoto(
@@ -564,7 +620,7 @@ export default function AddPhoto() {
             title: item.title,
             category: item.category,
             description: item.description,
-            location: item.location || null,
+            location: item.location.trim() || null,
             projectID: state.projectID || null,
             photoDate: new Date(captureMs),
           },
@@ -587,6 +643,7 @@ export default function AddPhoto() {
     // the newest photoDate again and clear the acknowledgment; a remaining
     // queue that is now backdated has to be re-acknowledged.
     setAcknowledged(false)
+    setNewest(n => ({ state: 'loading', value: n.value }))
     refreshNewest()
   }
 
@@ -658,7 +715,10 @@ export default function AddPhoto() {
                 queueLength={queue.length}
                 canUpload={canUpload}
                 blockedMessage={blockedMessage}
-                orderCheckFailed={newest.state === 'error'}
+                checkingMessage={checkingMessage}
+                duplicateCheckFailed={dupState === 'error'}
+                onRetryDuplicateCheck={retryDuplicateCheck}
+                orderCheckFailed={orderCheckFailed}
                 outOfOrder={outOfOrder}
                 acknowledged={acknowledged}
                 onAcknowledge={setAcknowledged}

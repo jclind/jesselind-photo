@@ -9,6 +9,9 @@ type UploadBarProps = {
   queueLength: number
   canUpload: boolean
   blockedMessage: string | null
+  checkingMessage: string | null
+  duplicateCheckFailed: boolean
+  onRetryDuplicateCheck: () => void
   orderCheckFailed: boolean
   outOfOrder: { count: number; newest: Date } | null
   acknowledged: boolean
@@ -28,6 +31,9 @@ export default function UploadBar({
   queueLength,
   canUpload,
   blockedMessage,
+  checkingMessage,
+  duplicateCheckFailed,
+  onRetryDuplicateCheck,
   orderCheckFailed,
   outOfOrder,
   acknowledged,
@@ -63,11 +69,41 @@ export default function UploadBar({
         </p>
       )}
 
-      {orderCheckFailed && !outOfOrder && (
-        <p className={styles.orderCheckNote}>
-          Could not check the newest photo on the site, so date order was not
-          verified.
+      {checkingMessage && (
+        <p className={styles.orderCheckNote} role='status'>
+          {checkingMessage}
         </p>
+      )}
+
+      {duplicateCheckFailed && !uploading && (
+        <p className={styles.blockMessage} role='alert'>
+          Could not check for photos already in this project.{' '}
+          <button
+            type='button'
+            className={styles.smallButton}
+            onClick={onRetryDuplicateCheck}
+          >
+            Retry check
+          </button>
+        </p>
+      )}
+
+      {orderCheckFailed && !outOfOrder && (
+        <div className={styles.outOfOrder}>
+          <p>
+            Could not check the newest photo on the site, so date order could
+            not be verified. Upload only if these photos are newer than every
+            photo already on the site.
+          </p>
+          <label className={styles.ackLabel}>
+            <input
+              type='checkbox'
+              checked={acknowledged}
+              onChange={e => onAcknowledge(e.target.checked)}
+            />
+            I understand
+          </label>
+        </div>
       )}
 
       {outOfOrder && (

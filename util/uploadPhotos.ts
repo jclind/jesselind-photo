@@ -71,15 +71,44 @@ export async function uploadPhoto(
   const photoRef = doc(db, 'photos', docId)
   const counterRef = doc(db, 'counters', 'photos')
 
-  // Objects this call uploaded successfully. Only these are ever deleted.
+  // A retry under a known docId checks the doc first: if an earlier attempt
+  // committed, the photo is live and nothing is uploaded over its objects.
+  if (opts?.docId) {
+    let existing: DocumentSnapshot
+    try {
+      existing = await getDoc(photoRef)
+    } catch (err) {
+      console.error('Could not check for an earlier commit:', err)
+      const status = {
+        state: 'failed' as const,
+        reason: 'firestore-unknown',
+        docId,
+      }
+      emit(status)
+      return status
+    }
+    if (existing.exists()) {
+      const status = {
+        state: 'done' as const,
+        id: existing.data().id as string,
+      }
+      emit(status)
+      return status
+    }
+  }
+
+  // Objects this call uploaded successfully. Only these are ever deleted, and
+  // only when the failure came before the transaction was attempted.
   const uploadedRefs: StorageReference[] = []
 
-  // Marks the photo failed. Objects this call uploaded are deleted only once
-  // getDoc confirms the photo doc is absent; if that check fails or the doc
-  // exists, nothing is deleted and a retry under the same docId picks up
-  // whatever was left.
+  // Marks the photo failed. A 'firestore' failure means the transaction was
+  // sent and may still commit, so it never deletes anything; the objects stay
+  // for a retry under the same docId. Earlier failures never sent a write, so
+  // their uploaded objects are deleted once getDoc confirms the photo doc is
+  // absent. If that check fails or the doc exists, nothing is deleted.
   const fail = async (reason: string): Promise<PhotoUploadStatus> => {
-    if (uploadedRefs.length > 0) {
+    const transactionAttempted = reason === 'firestore'
+    if (transactionAttempted || uploadedRefs.length > 0) {
       let docSnap: DocumentSnapshot
       try {
         docSnap = await getDoc(photoRef)
@@ -87,10 +116,9 @@ export async function uploadPhoto(
         console.error('Could not confirm doc absence, skipping cleanup:', err)
         const status = {
           state: 'failed' as const,
-          reason:
-            reason === 'firestore'
-              ? 'firestore-unknown'
-              : `${reason}, firestore-unknown`,
+          reason: transactionAttempted
+            ? 'firestore-unknown'
+            : `${reason}, firestore-unknown`,
           docId,
         }
         emit(status)
@@ -106,7 +134,8 @@ export async function uploadPhoto(
         return status
       }
       const cleanupFailures: string[] = []
-      for (const uploadedRef of uploadedRefs) {
+      const toDelete = transactionAttempted ? [] : uploadedRefs
+      for (const uploadedRef of toDelete) {
         try {
           await deleteObject(uploadedRef)
         } catch (err) {
@@ -134,7 +163,7 @@ export async function uploadPhoto(
     return fail('dimensions')
   }
 
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const safeName = sanitizeFileName(file.name)
   const storagePath = `full/${docId}-${safeName}`
   const thumbnailPath = `thumbnails/${docId}-${safeName}`
 
@@ -237,6 +266,12 @@ export async function uploadPhoto(
   const status = { state: 'done' as const, id }
   emit(status)
   return status
+}
+
+// The filename part of a new-flow Storage object name. The add-photo page's
+// duplicate check uses the same function, so the two cannot drift.
+export function sanitizeFileName(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, '_')
 }
 
 // Existing uploads in a project, for the caller's duplicate check: a picked

@@ -50,10 +50,10 @@ function utcOrNaN(
   return matches ? ms : NaN
 }
 
-// Reads DateTimeOriginal as epoch milliseconds, falling back to CreateDate,
-// which is exifr's name for the digitized date. Returns null when the file
-// has no usable date. exifr is lazy-imported so it stays out of the page
-// bundle until files are added.
+// Reads DateTimeOriginal as epoch milliseconds, falling back to CreateDate
+// (exifr's name for the digitized date) when it is missing or malformed.
+// Returns null when the file has no usable date. exifr is lazy-imported so
+// it stays out of the page bundle until files are added.
 export async function readCaptureTime(file: File): Promise<number | null> {
   try {
     const { parse } = await import('exifr')
@@ -61,9 +61,9 @@ export async function readCaptureTime(file: File): Promise<number | null> {
       pick: ['DateTimeOriginal', 'CreateDate'],
       reviveValues: false,
     })
-    const date = parseExifDateTime(
-      exif?.DateTimeOriginal ?? exif?.CreateDate
-    )
+    const date =
+      parseExifDateTime(exif?.DateTimeOriginal) ??
+      parseExifDateTime(exif?.CreateDate)
     return date ? date.getTime() : null
   } catch (err) {
     console.error(`EXIF read failed for ${file.name}:`, err)
