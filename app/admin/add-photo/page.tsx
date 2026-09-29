@@ -589,6 +589,8 @@ export default function AddPhoto() {
       )
       .map(item => item.key)
     dispatch({ type: 'apply', keys, patch })
+    // Clearing the selection after apply saves scrolling back to the toolbar
+    dispatch({ type: 'setSelected', keys: null })
   }
 
   const runUpload = async (batch: BatchItem[]) => {

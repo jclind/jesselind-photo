@@ -1,5 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
+import { X } from 'lucide-react'
 import styles from './page.module.scss'
 import { BatchItem, DayGroup } from './types'
 
@@ -133,7 +134,7 @@ function Tile({ item, selected, uploading, onClick, onRemove }: TileProps) {
             aria-label={`Remove ${item.file.name}`}
             onClick={() => onRemove(item.key)}
           >
-            ×
+            <X size={14} strokeWidth={2} aria-hidden='true' />
           </button>
         )}
       </div>
