@@ -82,7 +82,9 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         items: state.items.map(item =>
-          item.key === action.key ? { ...item, captureMs: action.captureMs } : item
+          item.key === action.key && !item.dateEdited
+            ? { ...item, captureMs: action.captureMs }
+            : item
         ),
         exifPending: Math.max(0, state.exifPending - 1),
       }
@@ -136,7 +138,13 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         items: state.items.map(item =>
-          keys.has(item.key) ? { ...item, ...action.patch } : item
+          keys.has(item.key)
+            ? {
+                ...item,
+                ...action.patch,
+                dateEdited: item.dateEdited || 'captureMs' in action.patch,
+              }
+            : item
         ),
       }
     }
@@ -286,14 +294,17 @@ export default function AddPhoto() {
   }, [state.items])
 
   // Object URLs are revoked here rather than derived in an effect, so every
-  // URL has exactly one revoke even when items change mid-batch.
-  useEffect(
-    () => () =>
+  // URL has exactly one revoke even when items change mid-batch. Marking
+  // every key removed makes queued preview jobs skip and in-flight ones
+  // revoke the URL they were about to store.
+  useEffect(() => {
+    const removedKeys = removedKeysRef.current
+    return () =>
       itemsRef.current.forEach(item => {
+        removedKeys.add(item.key)
         if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
-      }),
-    []
-  )
+      })
+  }, [])
 
   // Warn before leaving mid-upload
   useEffect(() => {
@@ -545,6 +556,7 @@ export default function AddPhoto() {
         file,
         previewUrl: null,
         captureMs: null,
+        dateEdited: false,
         location: '',
         category: '',
         title: '',

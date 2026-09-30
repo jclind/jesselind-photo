@@ -9,6 +9,8 @@ export type BatchItem = {
   // Falls back to the file's own URL if generation fails.
   previewUrl: string | null
   captureMs: number | null
+  // Set once a date is applied by hand, so a late EXIF read cannot replace it
+  dateEdited: boolean
   location: string
   category: string
   title: string
