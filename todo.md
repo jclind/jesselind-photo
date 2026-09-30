@@ -11,6 +11,7 @@
 - [x] add styles for the `PhotoLoader` messages in `components/PhotoViewer/PhotoViewer.module.scss`. `.spinner` was renamed `.loadingMessage` since it never rendered a spinner; it and `.errorMessage` now use `$secondary-text` / `$fs-small` instead of falling back to body defaults
 - [x] add catch for when home screen doesn't load correctly (is stuck in 0/9). `HomeImages` now counts an image as settled on `error` as well as `load`, tracks them through DOM listeners instead of React's `onLoad` (so images that finish before hydration still count), and reveals the page after 10s no matter what. `page.module.scss` has a 14s CSS-only fallback for the case where the bundle never runs, since the overlay is `position: fixed; z-index: 20` and otherwise blocks the whole site.
 - [ ] gallery images have greater clickable areas than what the image shows
+- [ ] make re-serialize safe to run during an upload. `reSerializePhotos` reads every photo, then commits a plain `writeBatch` that sets `counters/photos.lastSequenceNumber` with no precondition (`util/reSerializePhotos.ts:58-61`). An upload that commits between the read and the batch loses its counter bump, so the next upload reuses that photo's `sequenceNumber` and `id`: two docs share an id, `where('id', '==', ...)` lookups break, and the sitemap lists the URL twice. Storage keys no longer use the id, so no files get overwritten. Fix by running re-serialize as a transaction, or preconditioning it on the counter. Low risk with one admin.
 
 # chores
 

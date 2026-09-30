@@ -9,12 +9,29 @@ import AdminGate from '@/components/AdminGate'
 
 const SettingsPage = () => {
   const [backfillStatus, setBackfillStatus] = useState<string>('')
+  const [reSerializeStatus, setReSerializeStatus] = useState<string>('')
+  const [backfillRunning, setBackfillRunning] = useState(false)
+  const [reSerializeRunning, setReSerializeRunning] = useState(false)
+  const anyRunning = backfillRunning || reSerializeRunning
 
-  const handleReSerializeClick = () => {
-    reSerializePhotos()
+  const handleReSerializeClick = async () => {
+    if (anyRunning) return
+    setReSerializeRunning(true)
+    setReSerializeStatus('Running…')
+    try {
+      const { count } = await reSerializePhotos()
+      setReSerializeStatus(`Done. Renumbered ${count} photos.`)
+    } catch (err) {
+      console.error(err)
+      setReSerializeStatus(`Error: ${(err as Error).message}`)
+    } finally {
+      setReSerializeRunning(false)
+    }
   }
 
   const handleBackfillBlurs = async () => {
+    if (anyRunning) return
+    setBackfillRunning(true)
     setBackfillStatus('Running…')
     try {
       const { updated, skipped, failed } = await backfillBlurPlaceholders()
@@ -24,6 +41,8 @@ const SettingsPage = () => {
     } catch (err) {
       console.error(err)
       setBackfillStatus(`Error: ${(err as Error).message}`)
+    } finally {
+      setBackfillRunning(false)
     }
   }
 
@@ -32,12 +51,13 @@ const SettingsPage = () => {
       <div className={styles.settingsPage}>
         <AdminNav />
         <div className={styles.buttons}>
-          <button onClick={handleReSerializeClick}>
+          <button onClick={handleReSerializeClick} disabled={anyRunning}>
             Re-serialize Image Database
           </button>
-          <button onClick={handleBackfillBlurs}>
+          <button onClick={handleBackfillBlurs} disabled={anyRunning}>
             Backfill Blur Placeholders
           </button>
+          {reSerializeStatus && <p>{reSerializeStatus}</p>}
           {backfillStatus && <p>{backfillStatus}</p>}
         </div>
       </div>
