@@ -46,7 +46,7 @@ export const projects: ProjectType[] = [
     date: '07-13-2026',
     endDate: '07-31-2026',
     description:
-      "Spontaneous three week trip through Vietnam, planned with about a week's notice with two friends. Explored the cities of Saigon and Hanoi and the countryside of Ninh Binh. We also embarked on a four day motorcycle ride through the northern mountains of the Ha Giang Loop. Shot on Fujifilm X-T4",
+      "Spontaneous three-week trip through Vietnam with two friends, planned with about a week's notice. Explored the cities of Saigon and Hanoi and the countryside of Ninh Binh. We also embarked on a four-day motorcycle ride through the northern mountains of the Ha Giang Loop. Shot on Fujifilm X-T4.",
     posterUrl: '/images/projects/vietnam-2026-poster.webp',
     thumbnailUrl: '/images/projects/vietnam-2026-thumbnail.webp',
     mobilePosterUrl: '/images/projects/vietnam-2026-poster-mobile.webp',
