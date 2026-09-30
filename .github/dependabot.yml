@@ -3,6 +3,8 @@ updates:
   # Weekly in-range bumps, grouped so minor+patch arrive as one PR. ESLint and
   # TypeScript majors are ignored on purpose: both upgrades are blocked by the
   # lint stack (see todo.md), so those PRs would fail CI by construction.
+  # @types/node majors are ignored because the types should match the Node
+  # version the site runs on (.nvmrc, 24). Drop the rule when Node moves.
   - package-ecosystem: npm
     directory: /
     schedule:
@@ -17,6 +19,9 @@ updates:
         update-types:
           - version-update:semver-major
       - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
+      - dependency-name: '@types/node'
         update-types:
           - version-update:semver-major
 
